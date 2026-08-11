@@ -660,6 +660,7 @@ export function LandingPage() {
 
       {/* Bottom Section */}
       <footer
+        className="landing-footer"
         style={{
           width: '100%',
           display: 'flex',
@@ -672,6 +673,7 @@ export function LandingPage() {
         {/* Bottom-Left Tagline */}
         <div
           ref={taglineRef}
+          className="landing-tagline"
           style={{
             color: '#FFFFFF',
             fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif',
@@ -707,6 +709,7 @@ export function LandingPage() {
 
         {/* Bottom-Center Interactive Cartoon Eyes + iPhone Icons Glass Dock */}
         <div
+          className="landing-dock-container"
           style={{
             position: 'absolute',
             left: '50%',
@@ -784,6 +787,7 @@ export function LandingPage() {
 
           {/* Frosted Glass Dock Container */}
           <div
+            className="landing-dock-glass"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.28)',
               backdropFilter: 'blur(28px)',
