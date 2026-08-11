@@ -1,0 +1,779 @@
+/* Fullscreen Dark #212121 Loading Overlay */
+.hamster-loader-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #212121 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  animation: fadeInOverlay 0.2s ease-out forwards;
+}
+
+body.theme-eraser .hamster-loader-backdrop {
+  background-color: #212121 !important;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hamster-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.hamster-loading-text {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: #A1A1AA;
+  letter-spacing: 0.02em;
+}
+
+/* Hamster Wheel Animation CSS */
+.wheel-and-hamster {
+  --dur: 1s;
+  position: relative;
+  width: 12em;
+  height: 12em;
+  font-size: 14px;
+  margin: 0 auto;
+}
+
+.wheel,
+.hamster,
+.hamster div,
+.spoke {
+  position: absolute;
+}
+
+.wheel,
+.spoke {
+  border-radius: 50%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wheel {
+  background: radial-gradient(100% 100% at center, hsla(0, 0%, 60%, 0) 47.8%, hsl(0, 0%, 60%) 48%);
+  z-index: 2;
+}
+
+.hamster {
+  animation: hamster var(--dur) ease-in-out infinite;
+  top: 50%;
+  left: calc(50% - 3.5em);
+  width: 7em;
+  height: 3.75em;
+  transform: rotate(4deg) translate(-0.8em, 1.35em);
+  transform-origin: 50% 0;
+  z-index: 1;
+}
+
+.hamster__head {
+  animation: hamsterHead var(--dur) ease-in-out infinite;
+  background: hsl(30, 90%, 55%);
+  border-radius: 70% 30% 0 100% / 40% 25% 25% 60%;
+  box-shadow: 0 -0.25em 0 hsl(30, 90%, 80%) inset, 0.75em -1.55em 0 hsl(30, 90%, 90%) inset;
+  top: 0;
+  left: -2em;
+  width: 2.75em;
+  height: 2.5em;
+  transform-origin: 100% 50%;
+}
+
+.hamster__ear {
+  animation: hamsterEar var(--dur) ease-in-out infinite;
+  background: hsl(0, 90%, 85%);
+  border-radius: 50%;
+  box-shadow: -0.25em 0 hsl(30, 90%, 55%) inset;
+  top: -0.25em;
+  right: -0.25em;
+  width: 0.75em;
+  height: 0.75em;
+  transform-origin: 50% 75%;
+}
+
+.hamster__eye {
+  animation: hamsterEye var(--dur) linear infinite;
+  background-color: hsl(0, 0%, 0%);
+  border-radius: 50%;
+  top: 0.375em;
+  left: 1.25em;
+  width: 0.5em;
+  height: 0.5em;
+}
+
+.hamster__nose {
+  background: hsl(0, 90%, 75%);
+  border-radius: 35% 65% 85% 15% / 70% 50% 50% 30%;
+  top: 0.75em;
+  left: 0;
+  width: 0.2em;
+  height: 0.25em;
+}
+
+.hamster__body {
+  animation: hamsterBody var(--dur) ease-in-out infinite;
+  background: hsl(30, 90%, 90%);
+  border-radius: 50% 30% 50% 30% / 15% 60% 40% 40%;
+  box-shadow: 0.1em 0.75em 0 hsl(30, 90%, 55%) inset, 0.15em -0.5em 0 hsl(30, 90%, 80%) inset;
+  top: 0.25em;
+  left: 2em;
+  width: 4.5em;
+  height: 3em;
+  transform-origin: 17% 50%;
+  transform-style: preserve-3d;
+}
+
+.hamster__limb--fr,
+.hamster__limb--fl {
+  clip-path: polygon(0 0, 100% 0, 70% 80%, 60% 100%, 0% 100%, 40% 80%);
+  top: 2em;
+  left: 0.5em;
+  width: 1em;
+  height: 1.5em;
+  transform-origin: 50% 0;
+}
+
+.hamster__limb--fr {
+  animation: hamsterFRLimb var(--dur) linear infinite;
+  background: linear-gradient(hsl(30, 90%, 80%) 80%, hsl(0, 90%, 75%) 80%);
+  transform: rotate(15deg) translateZ(-1px);
+}
+
+.hamster__limb--fl {
+  animation: hamsterFLLimb var(--dur) linear infinite;
+  background: linear-gradient(hsl(30, 90%, 90%) 80%, hsl(0, 90%, 85%) 80%);
+  transform: rotate(15deg);
+}
+
+.hamster__limb--br,
+.hamster__limb--bl {
+  border-radius: 0.75em 0.75em 0 0;
+  clip-path: polygon(0 0, 100% 0, 100% 30%, 70% 90%, 70% 100%, 30% 100%, 40% 90%, 0% 30%);
+  top: 1em;
+  left: 2.8em;
+  width: 1.5em;
+  height: 2.5em;
+  transform-origin: 50% 30%;
+}
+
+.hamster__limb--br {
+  animation: hamsterBRLimb var(--dur) linear infinite;
+  background: linear-gradient(hsl(30, 90%, 80%) 90%, hsl(0, 90%, 75%) 90%);
+  transform: rotate(-25deg) translateZ(-1px);
+}
+
+.hamster__limb--bl {
+  animation: hamsterBLLimb var(--dur) linear infinite;
+  background: linear-gradient(hsl(30, 90%, 90%) 90%, hsl(0, 90%, 85%) 90%);
+  transform: rotate(-25deg);
+}
+
+.hamster__tail {
+  animation: hamsterTail var(--dur) linear infinite;
+  background: hsl(0, 90%, 85%);
+  border-radius: 0.25em 50% 50% 0.25em;
+  box-shadow: 0 -0.2em 0 hsl(0, 90%, 75%) inset;
+  top: 1.5em;
+  right: -0.5em;
+  width: 1em;
+  height: 0.5em;
+  transform: rotate(30deg) translateZ(-1px);
+  transform-origin: 0.25em 0.25em;
+}
+
+.spoke {
+  animation: spoke var(--dur) linear infinite;
+  background: radial-gradient(100% 100% at center, hsl(0, 0%, 60%) 4.8%, hsla(0, 0%, 60%, 0) 5%),
+    linear-gradient(hsla(0, 0%, 55%, 0) 46.9%, hsl(0, 0%, 65%) 47% 52.9%, hsla(0, 0%, 65%, 0) 53%) 50% 50% / 99% 99% no-repeat;
+}
+
+/* Keyframes */
+@keyframes hamster {
+  from, to { transform: rotate(4deg) translate(-0.8em, 1.35em); }
+  50% { transform: rotate(0) translate(-0.8em, 1.35em); }
+}
+
+@keyframes hamsterHead {
+  from, 25%, 50%, 75%, to { transform: rotate(0); }
+  12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(8deg); }
+}
+
+@keyframes hamsterEye {
+  from, 90%, to { transform: scaleY(1); }
+  95% { transform: scaleY(0); }
+}
+
+/* ==========================================================================
+   3D PIXEL TORCH WIDGET (MARAUDER LIGHT REVEAL)
+   ========================================================================== */
+.torch-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.torch-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.torch-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.simple-text {
+  position: absolute;
+  bottom: -40px;
+  width: 160px;
+  text-align: center;
+  color: #F4EFEB;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  background: rgba(42, 24, 11, 0.85);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid #4A2E16;
+}
+
+.torch {
+  display: flex;
+  justify-content: center;
+  height: 150px;
+}
+
+.head,
+.stick {
+  position: absolute;
+  width: 30px;
+  transform-style: preserve-3d;
+  transform: rotateX(-30deg) rotateY(45deg);
+}
+
+.stick {
+  position: relative;
+  height: 120px;
+}
+
+.face {
+  position: absolute;
+  transform-style: preserve-3d;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-template-rows: 50% 50%;
+  background-color: #000000;
+}
+
+.top {
+  transform: rotateX(90deg) translateZ(15px);
+}
+
+.left {
+  transform: rotateY(-90deg) translateZ(15px);
+}
+
+.right {
+  transform: rotateY(0deg) translateZ(15px);
+}
+
+.top div,
+.left div,
+.right div {
+  width: 102%;
+  height: 102%;
+}
+
+.top div:nth-child(1),
+.left div:nth-child(3),
+.right div:nth-child(3) {
+  background-color: #ffff9760;
+}
+
+.top div:nth-child(2),
+.left div:nth-child(1),
+.right div:nth-child(1) {
+  background-color: #ffd80060;
+}
+
+.top div:nth-child(3),
+.left div:nth-child(4),
+.right div:nth-child(4) {
+  background-color: #ffffff60;
+}
+
+.top div:nth-child(4),
+.left div:nth-child(2),
+.right div:nth-child(2) {
+  background-color: #ff8f0060;
+}
+
+.side {
+  position: absolute;
+  width: 30px;
+  height: 120px;
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-template-rows: repeat(8, 12.5%);
+  cursor: pointer;
+  translate: 0 12px;
+}
+
+.side-left {
+  transform: rotateY(-90deg) translateZ(15px) translateY(8px);
+}
+
+.side-right {
+  transform: rotateY(0deg) translateZ(15px) translateY(8px);
+}
+
+.side-left div,
+.side-right div {
+  width: 103%;
+  height: 103%;
+}
+
+.side div:nth-child(1) {
+  background-color: #443622;
+}
+
+.side div:nth-child(2),
+.side div:nth-child(2) {
+  background-color: #2e2517;
+}
+
+.side div:nth-child(3),
+.side div:nth-child(5) {
+  background-color: #4b3b23;
+}
+
+.side div:nth-child(4),
+.side div:nth-child(10) {
+  background-color: #251e12;
+}
+
+.side div:nth-child(6) {
+  background-color: #292115;
+}
+
+.side div:nth-child(7) {
+  background-color: #4b3c26;
+}
+
+.side div:nth-child(8) {
+  background-color: #292115;
+}
+
+.side div:nth-child(9) {
+  background-color: #4b3a21;
+}
+
+.side div:nth-child(11),
+.side div:nth-child(15) {
+  background-color: #3d311d;
+}
+
+.side div:nth-child(12) {
+  background-color: #2c2315;
+}
+
+.side div:nth-child(13) {
+  background-color: #493a22;
+}
+
+.side div:nth-child(14) {
+  background-color: #2b2114;
+}
+
+.side div:nth-child(16) {
+  background-color: #271e10;
+}
+
+.torch-container input:checked ~ .torch .face {
+  filter: drop-shadow(0px 0px 2px rgb(255, 255, 255))
+    drop-shadow(0px 0px 10px rgba(255, 237, 156, 0.7))
+    drop-shadow(0px 0px 25px rgba(255, 227, 101, 0.4));
+}
+
+.torch-container input:checked ~ .torch .top div:nth-child(1),
+.torch-container input:checked ~ .torch .left div:nth-child(3),
+.torch-container input:checked ~ .torch .right div:nth-child(3) {
+  background-color: #ffff97;
+}
+
+.torch-container input:checked ~ .torch .top div:nth-child(2),
+.torch-container input:checked ~ .torch .left div:nth-child(1),
+.torch-container input:checked ~ .torch .right div:nth-child(1) {
+  background-color: #ffd800;
+}
+
+.torch-container input:checked ~ .torch .top div:nth-child(3),
+.torch-container input:checked ~ .torch .left div:nth-child(4),
+.torch-container input:checked ~ .torch .right div:nth-child(4) {
+  background-color: #ffffff;
+}
+
+.torch-container input:checked ~ .torch .top div:nth-child(4),
+.torch-container input:checked ~ .torch .left div:nth-child(2),
+.torch-container input:checked ~ .torch .right div:nth-child(2) {
+  background-color: #ff8f00;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(1) {
+  background-color: #7c623e;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(2),
+.torch-container input:checked ~ .torch .side div:nth-child(2) {
+  background-color: #4c3d26;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(3),
+.torch-container input:checked ~ .torch .side div:nth-child(5) {
+  background-color: #937344;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(4),
+.torch-container input:checked ~ .torch .side div:nth-child(10) {
+  background-color: #3c2f1c;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(6) {
+  background-color: #423522;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(7) {
+  background-color: #9f7f50;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(8) {
+  background-color: #403320;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(9) {
+  background-color: #977748;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(11),
+.torch-container input:checked ~ .torch .side div:nth-child(15) {
+  background-color: #675231;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(12) {
+  background-color: #3d301d;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(13) {
+  background-color: #987849;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(14) {
+  background-color: #3b2e1b;
+}
+
+.torch-container input:checked ~ .torch .side div:nth-child(16) {
+  background-color: #372a17;
+}
+
+/* ==========================================================================
+   MARAUDER VINTAGE PARCHMENT RIBBON SCROLL BUTTON
+   ========================================================================== */
+.marauder-ribbon-scroll {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 52px;
+  background: #E8D8C3;
+  border: 2px solid #5C4229;
+  border-radius: 4px;
+  box-shadow: 0 14px 36px rgba(44, 29, 17, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -2px 4px rgba(92, 66, 41, 0.3);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.marauder-ribbon-scroll::before,
+.marauder-ribbon-scroll::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 28px;
+  height: 108%;
+  background: #D4C1A5;
+  border: 2px solid #5C4229;
+  z-index: -1;
+}
+
+.marauder-ribbon-scroll::before {
+  left: -20px;
+  transform: translateY(-50%) skewY(-10deg);
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+}
+
+.marauder-ribbon-scroll::after {
+  right: -20px;
+  transform: translateY(-50%) skewY(10deg);
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+
+.marauder-ribbon-scroll:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 20px 44px rgba(44, 29, 17, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.95);
+  background: #EFE0CC;
+}
+
+.ribbon-text {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 800;
+  color: #3D2612;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.6);
+}
+
+/* ==========================================================================
+   HAND-DRAWN DOODLE NOTEBOOK DECISION INPUT CARD
+   ========================================================================== */
+.doodle-notebook-card {
+  --bg-color: #fdfbf7;
+  --ink-color: #2c2c2c;
+  --paper-line: #e6e0d4;
+  --tape-color: rgba(255, 221, 161, 0.85);
+  --accent-coral: #ff8ba7;
+  --accent-mint: #c6e377;
+  --accent-lavender: #c0bbfe;
+  --accent-yellow: #ffdf6c;
+
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  background:
+    linear-gradient(var(--bg-color) 1.5em, transparent 1.5em) 0 0 / 100% 1.6em,
+    linear-gradient(var(--paper-line) 0.08em, transparent 0.08em) 0 1.5em / 100% 1.6em var(--bg-color);
+  border: 0.22em solid var(--ink-color);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow:
+    0.4em 0.4em 0 var(--ink-color),
+    inset 0 0 1.2em rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 2.2em 1.8em 1.6em;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-radius 0.4s ease;
+  z-index: 1;
+}
+
+.doodle-notebook-card:hover {
+  transform: translateY(-0.3em) rotate(0.5deg);
+  box-shadow: 0.6em 0.6em 0 var(--ink-color), inset 0 0 1.2em rgba(0, 0, 0, 0.03);
+  border-radius: 15px 255px 15px 225px / 255px 15px 225px 15px;
+}
+
+/* Washi Tape Header */
+.doodle-tape {
+  position: absolute;
+  top: -0.7em;
+  left: 50%;
+  transform: translateX(-50%) rotate(-4deg);
+  width: 6em;
+  height: 1.4em;
+  background: var(--tape-color);
+  border: 0.1em solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0.1em 0.1em 0.2em rgba(0, 0, 0, 0.1);
+  border-radius: 2px 4px 2px 5px;
+  z-index: 10;
+}
+
+/* SVG Doodles */
+.doodle-svg {
+  position: absolute;
+  fill: none;
+  stroke: var(--ink-color);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.doodle-svg.star {
+  width: 1.8em;
+  height: 1.8em;
+  top: 1.2em;
+  right: 1.2em;
+  fill: var(--accent-yellow);
+  animation: pulseSparkle 3s infinite alternate ease-in-out;
+}
+
+.doodle-svg.sparkle {
+  width: 1.5em;
+  height: 1.5em;
+  top: 1.2em;
+  left: 1.2em;
+  fill: var(--accent-mint);
+  animation: pulseSparkle 2.5s infinite alternate-reverse ease-in-out;
+}
+
+.doodle-svg.swirl {
+  width: 2.2em;
+  height: 2.2em;
+  bottom: 1.2em;
+  left: 1.2em;
+  stroke: var(--accent-lavender);
+  stroke-width: 6;
+  opacity: 0.6;
+  animation: rotateDoodle 15s linear infinite;
+}
+
+.doodle-title-badge {
+  font-family: "Comic Sans MS", "Chalkboard SE", "Marker Felt", var(--font-sans), sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  color: var(--ink-color);
+  background: var(--accent-lavender);
+  padding: 4px 12px;
+  border: 2px solid var(--ink-color);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow: 2px 2px 0 var(--ink-color);
+  letter-spacing: 0.05em;
+}
+
+.doodle-session-badge {
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-color);
+  background: var(--accent-yellow);
+  padding: 4px 10px;
+  border: 1.5px solid var(--ink-color);
+  border-radius: 12px;
+  box-shadow: 2px 2px 0 var(--ink-color);
+}
+
+.doodle-textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--ink-color);
+  border-radius: 12px;
+  background: rgba(253, 251, 247, 0.85);
+  color: var(--ink-color);
+  font-size: 14px;
+  font-family: "Comic Sans MS", "Chalkboard SE", var(--font-sans), sans-serif;
+  font-weight: 600;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+  z-index: 2;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.doodle-textarea:focus {
+  border-color: #000;
+  box-shadow: 0 0 0 3px rgba(192, 187, 254, 0.5), inset 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.doodle-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  font-family: "Comic Sans MS", "Chalkboard SE", var(--font-sans), sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--ink-color);
+  background: var(--accent-mint);
+  border: 2px solid var(--ink-color);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow: 3px 3px 0 var(--ink-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.05em;
+}
+
+.doodle-submit-btn:hover {
+  transform: translateY(-2px) rotate(-1deg);
+  box-shadow: 4px 5px 0 var(--ink-color);
+  background: var(--accent-coral);
+}
+
+/* ==========================================================================
+   STICKY NOTE STICKER COMPONENT HOVER DYNAMICS
+   ========================================================================== */
+.sticky-note-sticker:hover {
+  transform: translateY(-6px) rotate(0deg) scale(1.05) !important;
+  box-shadow: 12px 20px 36px rgba(0, 0, 0, 0.25), inset 0 -6px 12px rgba(0, 0, 0, 0.05) !important;
+  z-index: 20 !important;
+}
+
+@keyframes hamsterEar {
+  from, 25%, 50%, 75%, to { transform: rotate(0); }
+  12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(12deg); }
+}
+
+@keyframes hamsterBody {
+  from, 25%, 50%, 75%, to { transform: rotate(0); }
+  12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(-2deg); }
+}
+
+@keyframes hamsterFRLimb {
+  from, 25%, 50%, 75%, to { transform: rotate(50deg) translateZ(-1px); }
+  12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(-30deg) translateZ(-1px); }
+}
+
+@keyframes hamsterFLLimb {
+  from, 25%, 50%, 75%, to { transform: rotate(-30deg); }
+  12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(50deg); }
+}
+
+@keyframes hamsterBRLimb {
+  from, 25%, 50%, 75%, to { transform: rotate(-60deg) translateZ(-1px); }
+  12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(20deg) translateZ(-1px); }
+}
+
+@keyframes hamsterBLLimb {
+  from, 25%, 50%, 75%, to { transform: rotate(20deg); }
+  12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(-60deg); }
+}
+
+@keyframes hamsterTail {
+  from, 25%, 50%, 75%, to { transform: rotate(30deg) translateZ(-1px); }
+  12.5%, 37.5%, 62.5%, 87.5% { transform: rotate(10deg) translateZ(-1px); }
+}
+
+@keyframes spoke {
+  from { transform: rotate(0); }
+  to { transform: rotate(-1turn); }
+}

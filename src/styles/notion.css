@@ -1,0 +1,563 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Minimalist Notion Variables */
+  --bg-main: #FFFFFF;
+  --bg-secondary: #F7F7F5;
+  --bg-hover: #EFEFEF;
+  --border-light: #E2E2E2;
+  --border-dark: #D3D3D3;
+  --text-primary: #37352F;
+  --text-secondary: #787774;
+  --text-muted: #9B9A97;
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+html, body, #root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden !important;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Base Layout & App Shell */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden !important;
+  background-color: var(--bg-main);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  position: relative;
+}
+
+.notion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-bottom: none !important;
+  height: 60px;
+  box-sizing: border-box;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.brand-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-badge {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.header-status-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.session-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.session-pill:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Canvas Viewport */
+.graph-viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden !important;
+  display: flex;
+  background-color: var(--bg-main);
+  scrollbar-width: none !important;
+}
+
+.graph-viewport::-webkit-scrollbar {
+  display: none !important;
+}
+
+.top-canvas-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+  background-color: var(--bg-main);
+  border-bottom: 1px solid var(--border-light);
+  z-index: 20;
+}
+
+/* Notion-style Typography */
+.notion-title {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.notion-label {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+/* Minimalist Node Cards */
+.notion-node-card {
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 12px 16px;
+  width: 160px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+  z-index: 10;
+  position: relative;
+}
+
+.notion-node-card:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-dark);
+}
+
+.notion-node-card.selected {
+  border-color: #2EAADC;
+  box-shadow: 0 0 0 1px #2EAADC, 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.notion-node-card.affected-node {
+  border-left: 3px solid #E57373;
+}
+
+.root-decision-node {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin: 0 auto;
+  width: 500px;
+  max-width: 90%;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+/* Zoom Toolbar - Fixed Alignment */
+.zoom-toolbar {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 4px 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  z-index: 30;
+}
+
+.zoom-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.zoom-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Info Panel Drawer - Right Pinned Sidebar */
+.info-panel-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 360px;
+  background-color: var(--bg-main);
+  border-left: 1px solid var(--border-light);
+  overflow-y: auto;
+  z-index: 40;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.info-panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.info-panel-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notion-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.notion-property-row {
+  display: flex;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.notion-property-key {
+  width: 110px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notion-property-value {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.impact-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.impact-tag.positive { background-color: #E8F5E9; color: #2E7D32; }
+.impact-tag.negative { background-color: #FFEBEE; color: #C62828; }
+.impact-tag.neutral { background-color: #F5F5F5; color: #616161; }
+
+.btn-notion {
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn-notion:hover {
+  background-color: var(--bg-hover);
+}
+
+.btn-notion-primary {
+  background-color: var(--text-primary);
+  color: var(--bg-main);
+  border-color: var(--text-primary);
+}
+
+.btn-notion-primary:hover {
+  background-color: #2F2D2A;
+}
+
+.notion-card {
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.notion-info-card {
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+/* Animations */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.children-reveal-animated {
+  animation: fadeInScale 0.3s ease-out forwards;
+}
+
+
+/* ==========================================================================
+   THEME: 3D LAYERED PAPER CUTOUT DIORAMA AESTHETIC
+   ========================================================================== */
+body.theme-diorama {
+  background-color: #F4EFEB !important;
+  background-image: radial-gradient(circle at 50% 30%, #F9F5EF 0%, #ECE4D8 100%) !important;
+  --tree-connector-color: #A38F78;
+}
+
+body.theme-diorama .app-shell,
+body.theme-diorama .main-content,
+body.theme-diorama .graph-viewport {
+  background-color: #F4EFEB !important;
+  background-image: radial-gradient(circle at 50% 30%, #F9F5EF 0%, #ECE4D8 100%) !important;
+}
+
+body.theme-diorama .notion-header {
+  background-color: #FAF5EE !important;
+  border-bottom: 1px solid #E2D5C3 !important;
+  box-shadow: 0 4px 12px rgba(75, 45, 20, 0.06) !important;
+}
+
+/* Layer 3 Elevation: Root Objective Card (High Depth Elevation) */
+body.theme-diorama .root-decision-node {
+  border-radius: 16px !important;
+  border: 1px solid #D6C7B2 !important;
+  border-bottom: 2px solid #C4B39C !important;
+  background-color: #FFFDF9 !important;
+  box-shadow: 0 18px 36px -6px rgba(75, 45, 20, 0.22), 0 8px 16px -2px rgba(75, 45, 20, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  position: relative;
+  z-index: 15;
+}
+
+/* Layer 2 Elevation: Node Cards (3D Paper Cutout Elevation & Bevel) */
+body.theme-diorama .notion-node-card {
+  border-radius: 14px !important;
+  border: 1px solid #D8CBB7 !important;
+  border-bottom: 2px solid #C9BBA7 !important;
+  background-color: #FFFDF9 !important;
+  box-shadow: 0 10px 24px -4px rgba(75, 45, 20, 0.18), 0 4px 8px -2px rgba(75, 45, 20, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* Physical Paper Cutout Lift Effect on Hover */
+body.theme-diorama .notion-node-card:hover {
+  border-color: #BFA992 !important;
+  transform: translateY(-5px) scale(1.02) !important;
+  box-shadow: 0 24px 44px -8px rgba(75, 45, 20, 0.3), 0 12px 20px -4px rgba(75, 45, 20, 0.2), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  z-index: 25 !important;
+}
+
+body.theme-diorama .notion-node-card.selected {
+  border-color: #2EAADC !important;
+  border-bottom-color: #1B88B5 !important;
+  box-shadow: 0 0 0 3px rgba(46, 170, 220, 0.3), 0 14px 28px -4px rgba(75, 45, 20, 0.22) !important;
+}
+
+/* 3D Paper Cutout Connectors with Shadow */
+body.theme-diorama line {
+  filter: drop-shadow(0 2px 4px rgba(75, 45, 20, 0.25));
+}
+
+/* 3D Paper Cutout Shadowbox Cards */
+body.theme-diorama .notion-card {
+  border-radius: 14px !important;
+  border: 1px solid #D6C7B2 !important;
+  border-bottom: 2px solid #C4B39C !important;
+  background-color: #FFFDF9 !important;
+  box-shadow: 0 12px 28px -4px rgba(75, 45, 20, 0.16), 0 4px 10px -2px rgba(75, 45, 20, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+body.theme-diorama .notion-info-card {
+  border-radius: 12px !important;
+  border: 1px solid #E2D5C3 !important;
+  background-color: #FAF5EE !important;
+  box-shadow: 0 4px 10px rgba(75, 45, 20, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 3D Paper Cutout Color-Coded Domain Pills */
+body.theme-diorama .domain-pill {
+  font-weight: 700 !important;
+  border-radius: 14px !important;
+  padding: 3px 10px !important;
+  font-size: 10px !important;
+  letter-spacing: 0.03em !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 5px rgba(75, 45, 20, 0.12) !important;
+}
+
+/* ==========================================================================
+   THEME: ERASER.IO TECHNICAL DIAGRAM AESTHETIC
+   ========================================================================== */
+body.theme-eraser {
+  background-color: #F8FAFC !important;
+  --tree-connector-color: #94A3B8;
+}
+
+body.theme-eraser .app-shell,
+body.theme-eraser .main-content {
+  background-color: #F8FAFC !important;
+}
+
+body.theme-eraser .graph-viewport {
+  background-color: #F8FAFC !important;
+  background-image: radial-gradient(#CBD5E1 1.2px, transparent 1.2px) !important;
+  background-size: 20px 20px !important;
+}
+
+body.theme-eraser .notion-header {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+}
+
+body.theme-eraser .notion-node-card {
+  border-radius: 8px !important;
+  border: 1px solid #CBD5E1 !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-eraser .notion-node-card:hover {
+  border-color: #94A3B8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.theme-eraser .notion-node-card.selected {
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+}
+
+body.theme-eraser .root-decision-node {
+  border-radius: 10px !important;
+  border: 1px solid #94A3B8 !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 8px 16px -2px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.theme-eraser .notion-card {
+  border-radius: 10px !important;
+  border: 1px solid #CBD5E1 !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.theme-eraser .notion-info-card {
+  border-radius: 8px !important;
+  border: 1px solid #E2E8F0 !important;
+  background-color: #F8FAFC !important;
+}
+
+body.theme-eraser .domain-pill {
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 2px 8px !important;
+  font-size: 10px !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* Domain Badge Pills */
+.domain-pill-government { background-color: #FCEBEA !important; color: #B23A34 !important; border: 1px solid #F5C6C2 !important; }
+.domain-pill-energy { background-color: #FEF3C7 !important; color: #B45309 !important; border: 1px solid #FDE68A !important; }
+.domain-pill-transportation { background-color: #E6F4EA !important; color: #137333 !important; border: 1px solid #B7E1CD !important; }
+.domain-pill-economy { background-color: #F3E8FF !important; color: #6D28D9 !important; border: 1px solid #DDD6FE !important; }
+.domain-pill-default { background-color: #F1F5F9 !important; color: #475569 !important; border: 1px solid #E2E8F0 !important; }
+
+/* ==========================================================================
+   PAGE VIEW TRANSITION ANIMATION (LANDING <-> DECISION INPUT <-> GRAPH)
+   ========================================================================== */
+@keyframes pageFadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.985);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+}
+
+.page-view-transition {
+  animation: pageFadeInScale 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+
+
