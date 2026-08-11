@@ -147,7 +147,14 @@ export function GraphCanvas() {
     }
   }, [loadingStates.expandingNodeId, selectedNode?.expanded]);
 
-  // Pan Handlers
+  // Auto Mobile Zoom Scale Adjustment
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setZoomScale(0.55);
+    }
+  }, []);
+
+  // Pan Handlers (Mouse & Touch)
   const handleMouseDown = (e) => {
     if (
       e.target.closest('.notion-node-card') ||
@@ -174,25 +181,54 @@ export function GraphCanvas() {
     setIsDragging(false);
   };
 
+  // Touch Panning for Mobile Phones
+  const handleTouchStart = (e) => {
+    if (
+      e.target.closest('.notion-node-card') ||
+      e.target.closest('.info-panel-drawer') ||
+      e.target.closest('.zoom-toolbar') ||
+      e.target.closest('.top-canvas-toolbar') ||
+      e.target.closest('.notion-header')
+    ) {
+      return;
+    }
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      setDragStart({ x: touch.clientX - panPos.x, y: touch.clientY - panPos.y });
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    setPanPos({
+      x: touch.clientX - dragStart.x,
+      y: touch.clientY - dragStart.y
+    });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
   // Zoom Controls
-  const zoomIn = () => setZoomScale((prev) => Math.min(1.4, Math.round((prev + 0.1) * 10) / 10));
-  const zoomOut = () => setZoomScale((prev) => Math.max(0.4, Math.round((prev - 0.1) * 10) / 10));
+  const zoomIn = () => setZoomScale((prev) => Math.min(1.4, Math.round((prev + 0.15) * 100) / 100));
+  const zoomOut = () => setZoomScale((prev) => Math.max(0.25, Math.round((prev - 0.15) * 100) / 100));
   const resetZoom = () => {
-    setZoomScale(0.95);
+    setZoomScale(window.innerWidth < 768 ? 0.55 : 0.95);
     setPanPos({ x: 0, y: 0 });
   };
   const fitView = () => {
-    setZoomScale(0.85);
+    setZoomScale(window.innerWidth < 768 ? 0.45 : 0.85);
     setPanPos({ x: 0, y: 0 });
   };
 
   // Wheel Zoom
   const handleWheel = (e) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.05 : 0.05;
-      setZoomScale((prev) => Math.min(1.4, Math.max(0.4, Math.round((prev + delta) * 100) / 100)));
-    }
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.08 : 0.08;
+    setZoomScale((prev) => Math.min(1.4, Math.max(0.25, Math.round((prev + delta) * 100) / 100)));
   };
 
   if (activeView === 'convergence_graph') {
@@ -305,6 +341,9 @@ export function GraphCanvas() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
       >
         <div

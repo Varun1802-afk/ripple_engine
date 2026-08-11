@@ -608,7 +608,7 @@ body.theme-eraser .domain-pill {
 }
 
 /* ==========================================================================
-   LANDING PAGE DOCK MOBILE RESPONSIVENESS (< 768px)
+   LANDING PAGE DOCK & CANVAS MOBILE RESPONSIVENESS (< 768px)
    ========================================================================== */
 .landing-footer {
   width: 100%;
@@ -620,17 +620,72 @@ body.theme-eraser .domain-pill {
 }
 
 .landing-dock-container {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 100;
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+}
+
+.landing-dock-glass {
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 @media (max-width: 768px) {
+  .notion-header {
+    height: auto !important;
+    min-height: 48px;
+    padding: 6px 10px !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .brand-title {
+    font-size: 11px !important;
+    gap: 4px !important;
+  }
+
+  /* Hide right InfoPanel on mobile so tree graph occupies 100% viewport */
+  .info-panel-drawer {
+    display: none !important;
+  }
+
+  .root-decision-node {
+    width: 90% !important;
+    padding: 12px 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* Floating Touch Zoom Toolbar on Mobile */
+  .zoom-toolbar {
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 16px !important;
+    z-index: 100000 !important;
+    padding: 6px 10px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
+    border-radius: 8px !important;
+  }
+
+  .zoom-btn {
+    min-width: 34px !important;
+    height: 34px !important;
+    font-size: 12px !important;
+    padding: 0 8px !important;
+  }
+
+  .btn-notion {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+
   .landing-footer {
     flex-direction: column !important;
     align-items: center !important;
@@ -643,18 +698,19 @@ body.theme-eraser .domain-pill {
   }
 
   .landing-dock-container {
-    position: relative !important;
-    left: auto !important;
-    transform: none !important;
-    bottom: auto !important;
-    margin-bottom: max(8px, env(safe-area-inset-bottom)) !important;
-    z-index: 1000 !important;
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    margin-bottom: 0 !important;
+    z-index: 999999 !important;
   }
 
   .landing-dock-glass {
     padding: 8px 14px !important;
     gap: 14px !important;
-    max-width: 92vw !important;
+    max-width: 95vw !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
   }
 
   .landing-dock-icon {
