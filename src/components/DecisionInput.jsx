@@ -46,11 +46,20 @@ export function DecisionInput() {
     const finalDecisionText = customPrompt.trim() || PRESET_DECISION_CARDS[0].prompt;
 
     setIsSubmitting(true);
+
+    // 60-second timeout promise (1 minute)
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Resources could not be loaded. Workflow server took more than 1 minute to respond.')), 60000)
+    );
+
     try {
       setDecision(finalDecisionText);
 
-      // 1. Send POST request to n8n webhook https://ai-arena-first.app.n8n.cloud/webhook/theFirstLevel
-      const webhookRes = await initiateFirstLevelWorkflow({ decision: finalDecisionText });
+      // 1. Send POST request to n8n webhook with 60s timeout race
+      const webhookRes = await Promise.race([
+        initiateFirstLevelWorkflow({ decision: finalDecisionText }),
+        timeoutPromise
+      ]);
 
       // 2. Strictly DO NOT show the graph until a valid sessionId is received!
       if (webhookRes.success && webhookRes.sessionId) {
@@ -60,11 +69,11 @@ export function DecisionInput() {
         setActiveView('original_graph');
       } else {
         console.warn("⚠️ Webhook did not return a valid sessionId:", webhookRes);
-        setErrorMessage(webhookRes.error || "No valid sessionId received from webhook. Graph cannot load without a sessionId.");
+        setErrorMessage(webhookRes.error || "Resources could not be loaded. No valid sessionId received from workflow server.");
       }
     } catch (err) {
       console.error('Failed to initiate decision workflow:', err);
-      setErrorMessage(err.message || 'Failed to communicate with workflow server.');
+      setErrorMessage(err.message || 'Resources could not be loaded. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

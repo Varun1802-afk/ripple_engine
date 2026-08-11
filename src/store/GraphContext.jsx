@@ -214,7 +214,8 @@ export function GraphProvider({ children }) {
           }));
           clearInterval(pollAltCards);
           setLoadingStates((prev) => ({ ...prev, isLocking: false }));
-        } else if (attempts >= 10) {
+        } else if (attempts >= 30) {
+          console.warn("⏱️ World-State card polling timed out after 60 seconds (1 minute)");
           clearInterval(pollAltCards);
           setLoadingStates((prev) => ({ ...prev, isLocking: false }));
         }
@@ -235,7 +236,7 @@ export function GraphProvider({ children }) {
       // 1. Send POST request to alternate decision webhook https://decision-planner.app.n8n.cloud/webhook/ce2ef43b-5d9f-4465-a52d-df3ee1ea1fd3
       await triggerAlternateBranchWebhook({ sessionId, alternateId: altId });
 
-      // 2. Poll DB for alternate graph tree nodes
+      // 2. Poll DB for alternate graph tree nodes (Up to 30 attempts x 2s = 60s timeout)
       let attempts = 0;
       const pollAltNodes = setInterval(async () => {
         attempts++;
@@ -271,7 +272,8 @@ export function GraphProvider({ children }) {
           }
         }
 
-        if (attempts >= 10) {
+        if (attempts >= 30) {
+          console.warn("⏱️ Alternate graph polling timed out after 60 seconds (1 minute)");
           clearInterval(pollAltNodes);
           setLoadingStates((prev) => ({ ...prev, isAlternateLoading: false }));
         }
@@ -291,7 +293,7 @@ export function GraphProvider({ children }) {
       // 1. Send POST request to convergence webhook https://ai-arena-first.app.n8n.cloud/webhook/expand-more
       await triggerConvergenceWebhook({ sessionId });
 
-      // 2. Poll DB for convergence matrix data
+      // 2. Poll DB for convergence matrix data (Up to 30 attempts x 2s = 60s timeout)
       let attempts = 0;
       const pollConvData = setInterval(async () => {
         attempts++;
@@ -305,7 +307,8 @@ export function GraphProvider({ children }) {
           setActiveView('convergence_graph');
           clearInterval(pollConvData);
           setLoadingStates((prev) => ({ ...prev, isConvergenceLoading: false }));
-        } else if (attempts >= 10) {
+        } else if (attempts >= 30) {
+          console.warn("⏱️ Convergence matrix polling timed out after 60 seconds (1 minute)");
           clearInterval(pollConvData);
           setLoadingStates((prev) => ({ ...prev, isConvergenceLoading: false }));
         }
