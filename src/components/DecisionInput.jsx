@@ -91,7 +91,7 @@ export function DecisionInput() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '48px 120px',
+        padding: '24px clamp(16px, 5vw, 120px)',
         overflowY: 'auto',
         minHeight: '100%',
         backgroundColor: '#F8FAFC',
