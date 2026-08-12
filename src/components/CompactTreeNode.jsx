@@ -2,6 +2,25 @@ import React, { useState } from 'react';
 import { useGraph } from '../store/GraphContext.jsx';
 import { ShieldAlert, ChevronRight, ChevronDown } from 'lucide-react';
 
+const safeString = (val, fallback = 'General') => {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') return String(val);
+  if (typeof val === 'object' && val !== null) {
+    if (Array.isArray(val)) {
+      return val.map((v) => safeString(v, fallback)).filter(Boolean).join(', ') || fallback;
+    }
+    const keys = Object.keys(val);
+    if (keys.length > 0) {
+      const firstVal = val[keys[0]];
+      if (typeof firstVal === 'string' || typeof firstVal === 'number') {
+        return `${keys[0]}: ${firstVal}`;
+      }
+      return keys.join(', ');
+    }
+  }
+  return fallback;
+};
+
 export function CompactTreeNode({ node, isAlternate = false }) {
   const { selectedNodeId, selectNode, alternateState, theme, handleToggleNode } = useGraph();
   const [isHovered, setIsHovered] = useState(false);
@@ -25,8 +44,8 @@ export function CompactTreeNode({ node, isAlternate = false }) {
   };
 
   const levelNumber = node.graphLevel || node.level || 1;
-  const labelText = node.label || node.title || 'Consequence Node';
-  const domainText = node.domain || node.category || 'General';
+  const labelText = safeString(node.label || node.title, 'Consequence Node');
+  const domainText = safeString(node.domain || node.category, 'General');
 
   const getDomainPillClass = (dStr) => {
     const d = (dStr || '').toLowerCase();
@@ -131,15 +150,15 @@ export function CompactTreeNode({ node, isAlternate = false }) {
                 <ShieldAlert size={12} style={{ display: 'inline', marginRight: '4px' }}/>
                 IMPACT
               </span>
-              <span className={`impact-tag ${alternateImpact.direction?.toLowerCase() || 'neutral'}`}>
-                {alternateImpact.direction}
+              <span className={`impact-tag ${safeString(alternateImpact.direction, 'neutral').toLowerCase()}`}>
+                {safeString(alternateImpact.direction, 'Neutral')}
               </span>
             </div>
             <div style={{ fontSize: '13px', fontWeight: 500, color: '#37352F', marginBottom: '4px' }}>
-              Effect: {alternateImpact.effectType}
+              Effect: {safeString(alternateImpact.effectType, 'Modified Risk')}
             </div>
             <div style={{ fontSize: '12px', color: '#787774', lineHeight: 1.4 }}>
-              <strong>Reason:</strong> {alternateImpact.reason}
+              <strong>Reason:</strong> {safeString(alternateImpact.reason, 'Policy modification cascade')}
             </div>
           </div>
         )}

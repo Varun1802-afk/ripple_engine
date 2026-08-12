@@ -3,6 +3,25 @@ import { useGraph } from '../store/GraphContext.jsx';
 import { Lock, Info, ShieldAlert, Check, Loader2, Sparkles, Feather, ChevronUp, ChevronDown } from 'lucide-react';
 import { gsap } from 'gsap';
 
+const safeString = (val, fallback = '') => {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') return String(val);
+  if (typeof val === 'object' && val !== null) {
+    if (Array.isArray(val)) {
+      return val.map((v) => safeString(v, fallback)).filter(Boolean).join(', ') || fallback;
+    }
+    const keys = Object.keys(val);
+    if (keys.length > 0) {
+      const firstVal = val[keys[0]];
+      if (typeof firstVal === 'string' || typeof firstVal === 'number') {
+        return `${keys[0]}: ${firstVal}`;
+      }
+      return keys.join(', ');
+    }
+  }
+  return fallback;
+};
+
 export function InfoPanel({ isAlternate = false }) {
   const { selectedNode, handleExpandNode, handleFoldNode, loadingStates, graphLocked, theme } = useGraph();
   const panelBodyRef = useRef(null);
@@ -76,7 +95,7 @@ export function InfoPanel({ isAlternate = false }) {
         <div>
           <div className="mono-label" style={{ marginBottom: '4px' }}>NODE TITLE</div>
           <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)', lineHeight: 1.35 }}>
-            {selectedNode.label || selectedNode.title || 'Consequence Node'}
+            {safeString(selectedNode.label || selectedNode.title, 'Consequence Node')}
           </h2>
         </div>
 
@@ -96,9 +115,9 @@ export function InfoPanel({ isAlternate = false }) {
               <span>AFFECTED BY ALTERNATE DECISION</span>
             </div>
             <p style={{ margin: 0, fontSize: '12px', color: '#B71C1C', lineHeight: 1.4 }}>
-              <strong>Effect:</strong> {selectedNode.alternateImpact?.effectType || 'Modified Domain Risk'}
+              <strong>Effect:</strong> {safeString(selectedNode.alternateImpact?.effectType, 'Modified Domain Risk')}
               <br />
-              <strong>Reason:</strong> {selectedNode.alternateImpact?.reason || 'Cascade effect from alternate policy selection.'}
+              <strong>Reason:</strong> {safeString(selectedNode.alternateImpact?.reason, 'Cascade effect from alternate policy selection.')}
             </p>
           </div>
         )}
@@ -109,18 +128,18 @@ export function InfoPanel({ isAlternate = false }) {
           
           <div className="notion-property-row">
             <span className="notion-property-key">Domain</span>
-            <span className="notion-property-value" style={{ fontWeight: 600 }}>{selectedNode.domain || selectedNode.category || 'General'}</span>
+            <span className="notion-property-value" style={{ fontWeight: 600 }}>{safeString(selectedNode.domain || selectedNode.category, 'General')}</span>
           </div>
 
           <div className="notion-property-row">
             <span className="notion-property-key">Probability</span>
-            <span className="notion-property-value">{selectedNode.probability ? `${Math.round(selectedNode.probability * 100)}%` : '85%'}</span>
+            <span className="notion-property-value">{selectedNode.probability ? `${Math.round(Number(selectedNode.probability) * 100)}%` : '85%'}</span>
           </div>
 
           <div className="notion-property-row">
             <span className="notion-property-key">Impact Score</span>
             <span className="notion-property-value">
-              <span className="impact-tag negative">{selectedNode.impactScore || selectedNode.impact || '8.5'} / 10</span>
+              <span className="impact-tag negative">{safeString(selectedNode.impactScore || selectedNode.impact, '8.5')} / 10</span>
             </span>
           </div>
         </div>
@@ -129,7 +148,7 @@ export function InfoPanel({ isAlternate = false }) {
         <div>
           <div className="notion-section-title">Impact Analysis</div>
           <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.5, margin: 0 }}>
-            {selectedNode.description || 'Systemic consequence evaluating operational resilience, budget allocation, and policy enforcement across regional networks.'}
+            {safeString(selectedNode.description, 'Systemic consequence evaluating operational resilience, budget allocation, and policy enforcement across regional networks.')}
           </p>
         </div>
 
@@ -139,9 +158,9 @@ export function InfoPanel({ isAlternate = false }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {Object.entries(impactObject).map(([domainKey, statusVal]) => (
               <div key={domainKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                <span style={{ textTransform: 'capitalize', color: 'var(--text-secondary)' }}>{domainKey}</span>
-                <span className={`impact-tag ${String(statusVal).toLowerCase().includes('risk') ? 'negative' : 'neutral'}`}>
-                  {String(statusVal)}
+                <span style={{ textTransform: 'capitalize', color: 'var(--text-secondary)' }}>{safeString(domainKey, 'Domain')}</span>
+                <span className={`impact-tag ${safeString(statusVal).toLowerCase().includes('risk') ? 'negative' : 'neutral'}`}>
+                  {safeString(statusVal, 'Active')}
                 </span>
               </div>
             ))}
