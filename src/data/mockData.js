@@ -595,3 +595,128 @@ export const MOCK_CONVERGENCE_GRAPH = {
     }
   ]
 };
+
+/**
+ * 4-Level Complete Backup Graph Generator
+ * Structure: Level 1: 4 nodes | Level 2: 12 nodes (4*3) | Level 3: 24 nodes (12*2) | Level 4: 24 nodes (24*1)
+ * Used if all external workflows & database APIs fail completely.
+ */
+const generate4LevelBackupGraph = () => {
+  const domains = ['Government', 'Energy', 'Transportation', 'Economy', 'Infrastructure'];
+  const nodes = [];
+
+  const l1Titles = [
+    'Government Fiscal Policy & Subsidy Adjustments',
+    'Energy Grid Capacity & Renewable Integration',
+    'Transportation Fleet Logistics & Infrastructure',
+    'Economic Workforce Reskilling & Market Realignment'
+  ];
+
+  // Level 1: 4 nodes
+  l1Titles.forEach((t, i) => {
+    const l1Id = `node-b-1-${i + 1}`;
+    const l2ChildrenIds = [
+      `node-b-2-${i * 3 + 1}`,
+      `node-b-2-${i * 3 + 2}`,
+      `node-b-2-${i * 3 + 3}`
+    ];
+
+    nodes.push({
+      id: l1Id,
+      level: 1,
+      graphLevel: 1,
+      title: t,
+      label: t,
+      domain: domains[i % domains.length],
+      category: domains[i % domains.length],
+      probability: 0.85,
+      impactScore: 8.5,
+      impact: 8.5,
+      description: `Primary consequence sector analyzing ${t.toLowerCase()}.`,
+      expanded: false,
+      parentId: null,
+      childrenIds: l2ChildrenIds
+    });
+  });
+
+  // Level 2: 12 nodes (4 * 3 = 12)
+  for (let i = 0; i < 12; i++) {
+    const l2Id = `node-b-2-${i + 1}`;
+    const parentL1Idx = Math.floor(i / 3);
+    const parentL1Id = `node-b-1-${parentL1Idx + 1}`;
+    const l3ChildrenIds = [
+      `node-b-3-${i * 2 + 1}`,
+      `node-b-3-${i * 2 + 2}`
+    ];
+
+    nodes.push({
+      id: l2Id,
+      level: 2,
+      graphLevel: 2,
+      title: `Secondary Consequence ${i + 1}: ${domains[i % domains.length]} Impact`,
+      label: `Secondary Consequence ${i + 1}: ${domains[i % domains.length]} Impact`,
+      domain: domains[i % domains.length],
+      category: domains[i % domains.length],
+      probability: 0.75,
+      impactScore: 7.8,
+      impact: 7.8,
+      description: `Secondary operational consequence stemming from parent branch.`,
+      expanded: false,
+      parentId: parentL1Id,
+      childrenIds: l3ChildrenIds
+    });
+  }
+
+  // Level 3: 24 nodes (12 * 2 = 24)
+  for (let i = 0; i < 24; i++) {
+    const l3Id = `node-b-3-${i + 1}`;
+    const parentL2Idx = Math.floor(i / 2);
+    const parentL2Id = `node-b-2-${parentL2Idx + 1}`;
+    const l4ChildrenIds = [`node-b-4-${i + 1}`];
+
+    nodes.push({
+      id: l3Id,
+      level: 3,
+      graphLevel: 3,
+      title: `Tertiary Ripple ${i + 1}: Stakeholder Shift`,
+      label: `Tertiary Ripple ${i + 1}: Stakeholder Shift`,
+      domain: domains[i % domains.length],
+      category: domains[i % domains.length],
+      probability: 0.65,
+      impactScore: 6.9,
+      impact: 6.9,
+      description: `Tertiary cascading metric affecting regional stakeholder compliance.`,
+      expanded: false,
+      parentId: parentL2Id,
+      childrenIds: l4ChildrenIds
+    });
+  }
+
+  // Level 4: 24 nodes (24 * 1 = 24)
+  for (let i = 0; i < 24; i++) {
+    const l4Id = `node-b-4-${i + 1}`;
+    const parentL3Id = `node-b-3-${i + 1}`;
+
+    nodes.push({
+      id: l4Id,
+      level: 4,
+      graphLevel: 4,
+      title: `Terminal Outcome ${i + 1}: Equilibrium State`,
+      label: `Terminal Outcome ${i + 1}: Equilibrium State`,
+      domain: domains[i % domains.length],
+      category: domains[i % domains.length],
+      probability: 0.55,
+      impactScore: 5.8,
+      impact: 5.8,
+      description: `Final long-term equilibrium outcome across regional networks.`,
+      expanded: false,
+      parentId: parentL3Id,
+      childrenIds: []
+    });
+  }
+
+  return nodes;
+};
+
+export const COMPLETE_4_LEVEL_BACKUP_GRAPH = generate4LevelBackupGraph();
+

@@ -3,7 +3,7 @@ import { useGraph } from '../store/GraphContext.jsx';
 import { ShieldAlert, ChevronRight, ChevronDown } from 'lucide-react';
 
 export function CompactTreeNode({ node, isAlternate = false }) {
-  const { selectedNodeId, selectNode, alternateState, theme } = useGraph();
+  const { selectedNodeId, selectNode, alternateState, theme, handleToggleNode } = useGraph();
   const [isHovered, setIsHovered] = useState(false);
 
   const activeSelectedId = isAlternate ? alternateState.selectedNodeId : selectedNodeId;
@@ -15,6 +15,13 @@ export function CompactTreeNode({ node, isAlternate = false }) {
   const handleNodeClick = (e) => {
     e.stopPropagation();
     selectNode(node.id || node._id, isAlternate);
+  };
+
+  const handleToggleExpandFold = (e) => {
+    e.stopPropagation();
+    if (handleToggleNode) {
+      handleToggleNode(node.id || node._id);
+    }
   };
 
   const levelNumber = node.graphLevel || node.level || 1;
@@ -54,18 +61,51 @@ export function CompactTreeNode({ node, isAlternate = false }) {
           {labelText}
         </div>
 
-        {/* Bottom Status Indicator */}
+        {/* Bottom Status Indicator with Interactive Expand/Fold Toggle Button */}
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
           {levelNumber >= 4 ? (
-            <span className="notion-label" style={{ fontSize: '11px' }}>Terminal</span>
+            <span className="notion-label" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Terminal Node</span>
           ) : node.expanded ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#37352F' }}>
-              <ChevronDown size={14} /> Expanded
-            </span>
+            <button
+              onClick={handleToggleExpandFold}
+              title="Click to fold / collapse branch"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#1E293B',
+                backgroundColor: '#F1F5F9',
+                border: '1px solid #CBD5E1',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
+            >
+              <ChevronDown size={13} /> Fold Branch
+            </button>
           ) : (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#9B9A97' }}>
-              <ChevronRight size={14} /> Expandable
-            </span>
+            <button
+              onClick={handleToggleExpandFold}
+              title="Click to expand branch"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                color: '#64748B',
+                backgroundColor: 'transparent',
+                border: '1px dashed #CBD5E1',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
+            >
+              <ChevronRight size={13} /> Expand &gt;
+            </button>
           )}
         </div>
 

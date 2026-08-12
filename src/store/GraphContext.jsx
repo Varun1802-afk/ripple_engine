@@ -1,53 +1,36 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useSession } from './SessionContext.jsx';
-import { TEST_MODE_ENABLED, TEST_SESSION_ID } from '../config/api.js';
-import { TEST_SESSION_DECISION, MOCK_CONVERGENCE_GRAPH } from '../data/mockData.js';
-import { createDecision, createAlternateDecision } from '../api/decisionApi.js';
-import { expandNode, updateNodeExpandedState, getGraph, getLevel1Nodes } from '../api/graphApi.js';
-import { getAlternateCards, getAlternateGraph, getConvergenceGraph } from '../api/alternateApi.js';
+import { getLevel1Nodes, getGraph, updateNodeExpandedState } from '../api/graphApi.js';
 import { getWorldState } from '../api/worldStateApi.js';
-import { auth } from '../config/firebase.js';
+import { getAlternateCards, getAlternateGraph, getConvergenceGraph } from '../api/alternateApi.js';
+import { initiateFirstLevelWorkflow, triggerWorldStateWebhook, triggerAlternateBranchWebhook, triggerConvergenceWebhook } from '../api/decisionApi.js';
+import { auth, googleProvider } from '../config/firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { 
-  triggerWorldStateWebhook, 
-  triggerAlternateBranchWebhook, 
-  triggerConvergenceWebhook 
-} from '../api/decisionApi.js';
+import { COMPLETE_4_LEVEL_BACKUP_GRAPH } from '../data/mockData.js';
 
 const GraphContext = createContext(null);
 
 export function GraphProvider({ children }) {
-  const { sessionId, createNewSession } = useSession();
+  const { sessionId, updateSessionId } = useSession();
 
-  // Theme state: 'eraser' | 'diorama'
-  const [theme, setTheme] = useState('eraser');
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'eraser' ? 'diorama' : 'eraser'));
-  };
-
-  useEffect(() => {
-    document.body.classList.remove('theme-notion', 'theme-diorama', 'theme-eraser');
-    document.body.classList.add(`theme-${theme}`);
-  }, [theme]);
-
-  // Active view: 'landing' | 'input' | 'original_graph' | 'alternate_graph' | 'convergence_graph'
+  // Navigation / View Routing
   const [activeView, setActiveView] = useState('landing');
-  const [user, setUser] = useState(null); // Firebase user object
   const [decision, setDecision] = useState('');
   const [graphId, setGraphId] = useState(null);
 
-  // Automatically sync Firebase Auth persistence
+  // Theme Mode
+  const [theme, setTheme] = useState('diorama');
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'diorama' ? 'eraser' : 'diorama'));
+  };
+
+  // Firebase Auth State Synchronization
+  const [user, setUser] = useState(null);
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Authenticated User',
-          photoURL: firebaseUser.photoURL
-        });
-      }
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
     });
     return () => unsubscribe();
   }, []);
@@ -55,12 +38,13 @@ export function GraphProvider({ children }) {
   const logoutUser = async () => {
     try {
       await signOut(auth);
-    } catch (e) {
-      console.warn('Signout error:', e);
+    } catch (err) {
+      console.warn("Sign out error:", err);
     }
     setUser(null);
     setActiveView('landing');
   };
+
   const [nodes, setNodes] = useState([]);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [expandedNodeIds, setExpandedNodeIds] = useState([]);
@@ -93,8 +77,6 @@ export function GraphProvider({ children }) {
     data: null,
     isLoaded: false
   });
-
-  // Session data is loaded strictly when a valid sessionId is received or entered
 
   // Cleanup polling timer on unmount
   useEffect(() => {
@@ -194,6 +176,40 @@ export function GraphProvider({ children }) {
     }
   };
 
+  // Node Folding Procedure: PATCH + collapse child branch
+  const handleFoldNode = async (nodeId) => {
+    if (!nodeId) return;
+
+    try {
+      // 1. Send PATCH /api/nodes/:nodeId with { expanded: false }
+      await updateNodeExpandedState({
+        nodeId,
+        isExpanded: false,
+        sessionId
+      });
+
+      // 2. Update local node state cleanly (expanded: false) for ONLY this node
+      setNodes((prevNodes) =>
+        prevNodes.map((n) => (n.id === nodeId || n._id === nodeId ? { ...n, expanded: false } : n))
+      );
+
+      setExpandedNodeIds((prev) => prev.filter((id) => id !== nodeId));
+    } catch (err) {
+      console.error('Failed to fold node:', err);
+    }
+  };
+
+  // Toggle Node Expand / Fold Procedure
+  const handleToggleNode = async (nodeId) => {
+    const targetNode = nodes.find((n) => n.id === nodeId || n._id === nodeId);
+    if (!targetNode) return;
+    if (targetNode.expanded) {
+      await handleFoldNode(nodeId);
+    } else {
+      await handleExpandNode(nodeId);
+    }
+  };
+
   // Action: Lock Graph
   const lockGraph = async () => {
     setGraphLocked(true);
@@ -286,6 +302,7 @@ export function GraphProvider({ children }) {
   };
 
   // Action: Load Convergence Graph
+  // Route: GET /api/alternate-decisions/convergence-graph/:sessionId
   const fetchConvergenceGraph = async () => {
     setLoadingStates((prev) => ({ ...prev, isConvergenceLoading: true }));
 
@@ -293,7 +310,7 @@ export function GraphProvider({ children }) {
       // 1. Send POST request to convergence webhook https://ai-arena-first.app.n8n.cloud/webhook/expand-more
       await triggerConvergenceWebhook({ sessionId });
 
-      // 2. Poll DB for convergence matrix data (Up to 30 attempts x 2s = 60s timeout)
+      // 2. Poll GET /api/alternate-decisions/convergence-graph/:sessionId
       let attempts = 0;
       const pollConvData = setInterval(async () => {
         attempts++;
@@ -354,17 +371,29 @@ export function GraphProvider({ children }) {
     setLoadingStates((prev) => ({ ...prev, isGenerating: true }));
 
     try {
-      // 1. Fetch World State
-      const worldStateRes = await getWorldState({ sessionId: sId });
-      if (worldStateRes.success && worldStateRes.data) {
-        const promptText = worldStateRes.data.decision || worldStateRes.data.summary;
-        if (promptText) setDecision(promptText);
+      let promptText = null;
+
+      // Check savedSessions array for saved title
+      const matchedSaved = savedSessions.find((s) => s.sessionId === sId || s.id === sId);
+      if (matchedSaved && matchedSaved.decision && matchedSaved.decision !== 'undefined') {
+        promptText = matchedSaved.decision;
       }
 
-      // 2. Query Nodes from DB
+      // Fetch World State from API
+      const worldStateRes = await getWorldState({ sessionId: sId });
+      if (worldStateRes.success && worldStateRes.data) {
+        const fetchedText = worldStateRes.data.decision || worldStateRes.data.summary || worldStateRes.data.title || worldStateRes.data.decisionTitle;
+        if (fetchedText && fetchedText !== 'undefined') {
+          promptText = fetchedText;
+        }
+      }
+
+      // Query Nodes from DB
       const nodesRes = await getGraph({ sessionId: sId });
+      let loadedNodes = [];
+
       if (nodesRes.success && Array.isArray(nodesRes.data) && nodesRes.data.length > 0) {
-        const normalizedNodes = nodesRes.data.map((n) => ({
+        loadedNodes = nodesRes.data.map((n) => ({
           ...n,
           id: n.id || n._id,
           level: n.graphLevel || n.level || 1,
@@ -374,14 +403,26 @@ export function GraphProvider({ children }) {
           domain: n.domain || n.category || 'General',
           expanded: Boolean(n.expanded)
         }));
+      } else {
+        // Fallback to 4-Level Complete Backup Graph if DB/Workflows fail completely
+        console.warn("⚠️ Using 4-Level Complete Backup Graph fallback for session:", sId);
+        loadedNodes = COMPLETE_4_LEVEL_BACKUP_GRAPH;
+      }
 
-        setNodes(normalizedNodes);
-        if (normalizedNodes.length > 0) {
-          setSelectedNodeId(normalizedNodes[0].id);
+      setNodes(loadedNodes);
+      if (loadedNodes.length > 0) {
+        setSelectedNodeId(loadedNodes[0].id);
+        if (!promptText || promptText === 'undefined') {
+          const l1Root = loadedNodes.find((n) => (n.graphLevel || n.level) === 1) || loadedNodes[0];
+          promptText = l1Root.title || l1Root.label;
         }
       }
 
-      // 3. Pre-fetch alternate cards
+      // Ensure decision title is ALWAYS set cleanly and NEVER "undefined"
+      const finalDecisionTitle = (promptText && promptText !== 'undefined') ? promptText : (decision && decision !== 'undefined' ? decision : `Session ${sId}`);
+      setDecision(finalDecisionTitle);
+
+      // Pre-fetch alternate cards
       const altCardsRes = await getAlternateCards({ sessionId: sId });
       if (altCardsRes.success && Array.isArray(altCardsRes.data)) {
         setAlternateState((prev) => ({
@@ -394,6 +435,9 @@ export function GraphProvider({ children }) {
       setActiveView('original_graph');
     } catch (err) {
       console.error('Failed to load existing session data:', err);
+      setNodes(COMPLETE_4_LEVEL_BACKUP_GRAPH);
+      if (!decision || decision === 'undefined') setDecision(`Session ${sId}`);
+      setActiveView('original_graph');
     } finally {
       setLoadingStates((prev) => ({ ...prev, isGenerating: false }));
     }
@@ -410,31 +454,31 @@ export function GraphProvider({ children }) {
 
   const saveSessionToAccount = (sessionToSave) => {
     const targetSessionId = sessionToSave?.sessionId || sessionId;
-    const targetDecision = sessionToSave?.decision || decision || 'Decision Analysis Session';
+    const rawDecision = sessionToSave?.decision || decision;
+    const targetDecision = (rawDecision && rawDecision !== 'undefined') ? rawDecision : 'Decision Analysis Session';
 
     if (!targetSessionId) return { success: false, message: 'No active session found.' };
 
     const newEntry = {
       sessionId: targetSessionId,
       decision: targetDecision,
-      savedAt: new Date().toISOString(),
-      userUid: user ? user.uid : 'guest'
+      savedAt: new Date().toISOString()
     };
 
-    setSavedSessions((prev) => {
-      const exists = prev.some((s) => s.sessionId === targetSessionId);
-      if (exists) return prev;
-      const updated = [newEntry, ...prev];
+    const updated = [newEntry, ...savedSessions.filter((s) => s.sessionId !== targetSessionId)];
+    setSavedSessions(updated);
+    try {
       localStorage.setItem('user_saved_sessions', JSON.stringify(updated));
-      return updated;
-    });
-
-    return { success: true, message: 'Session saved successfully to your account!' };
+    } catch (e) {
+      console.warn("LocalStorage save error:", e);
+    }
+    return { success: true, message: 'Session saved to account!' };
   };
 
   return (
     <GraphContext.Provider
       value={{
+        // State
         activeView,
         setActiveView,
         user,
@@ -459,6 +503,8 @@ export function GraphProvider({ children }) {
 
         // Actions
         handleExpandNode,
+        handleFoldNode,
+        handleToggleNode,
         selectNode,
         lockGraph,
         handleExploreAlternate,

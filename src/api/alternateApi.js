@@ -45,12 +45,13 @@ export async function getAlternateGraph({ alternateDecisionId, alternateOptionId
 
 /**
  * Service contract for convergence graph mapping.
+ * Endpoint: GET /api/alternate-decisions/convergence-graph/:sessionId
  */
 export async function getConvergenceGraph({ sessionId }) {
-  const targetUrl = `${API_BASE_URL}/api/alternate-decisions/${sessionId}`;
+  const targetUrl = `${API_BASE_URL}/api/alternate-decisions/convergence-graph/${sessionId}`;
 
   return executeApiRequest({
-    endpointName: 'GET_CONVERGENCE (GET /api/alternate-decisions/:sessionId)',
+    endpointName: 'GET_CONVERGENCE (GET /api/alternate-decisions/convergence-graph/:sessionId)',
     url: targetUrl,
     method: 'GET',
     sessionId,
