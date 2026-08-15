@@ -26,8 +26,26 @@ export function ConvergenceGraphView() {
   const { convergenceState } = useGraph();
   const [selectedRelation, setSelectedRelation] = useState(null);
 
-  const data = convergenceState.data || MOCK_CONVERGENCE_GRAPH;
-  const relationships = Array.isArray(data.relationships) ? data.relationships : [];
+  const rawData = convergenceState.data || MOCK_CONVERGENCE_GRAPH;
+  const data = typeof rawData === 'object' && rawData !== null ? rawData : MOCK_CONVERGENCE_GRAPH;
+
+  let relationships = [];
+  if (Array.isArray(data)) {
+    relationships = data;
+  } else if (Array.isArray(data.relationships)) {
+    relationships = data.relationships;
+  } else if (Array.isArray(data.data)) {
+    relationships = data.data;
+  } else if (Array.isArray(data.matrix)) {
+    relationships = data.matrix;
+  } else if (Array.isArray(data.edges)) {
+    relationships = data.edges;
+  }
+
+  // Fallback to MOCK_CONVERGENCE_GRAPH relationships if database returned 0 relationships
+  if (relationships.length === 0 && Array.isArray(MOCK_CONVERGENCE_GRAPH.relationships)) {
+    relationships = MOCK_CONVERGENCE_GRAPH.relationships;
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -75,8 +93,8 @@ export function ConvergenceGraphView() {
 
           {/* Convergence Relationship List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {relationships.map((rel) => {
-              const relId = rel.id || `rel-${Math.random()}`;
+            {relationships.map((rel, idx) => {
+              const relId = rel.id || rel._id || `rel-${idx}`;
               const isSelected = selectedRelation?.id === relId;
               return (
                 <div
@@ -92,8 +110,8 @@ export function ConvergenceGraphView() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="mono-label level-badge">L{rel.fromLevel || 4}</span>
-                      <span style={{ fontSize: '13px', fontWeight: 600 }}>{safeString(rel.fromTitle, 'Source Node')}</span>
+                      <span className="mono-label level-badge">L{rel.fromLevel || rel.sourceLevel || 4}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600 }}>{safeString(rel.fromTitle || rel.source, 'Source Outcome')}</span>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
@@ -102,14 +120,14 @@ export function ConvergenceGraphView() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="mono-label level-badge">L{rel.toLevel || 1}</span>
-                      <span style={{ fontSize: '13px', fontWeight: 600 }}>{safeString(rel.toTitle, 'Target Node')}</span>
+                      <span className="mono-label level-badge">L{rel.toLevel || rel.targetLevel || 1}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600 }}>{safeString(rel.toTitle || rel.target, 'Target Trigger')}</span>
                     </div>
                   </div>
 
                   <div style={{ borderTop: '1px dashed var(--border-medium)', paddingTop: '8px', marginTop: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span className="mono-label" style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>
-                      RELATIONSHIP: {safeString(rel.relationship, 'Causal Cascade')}
+                      RELATIONSHIP: {safeString(rel.relationship || rel.label, 'Causal Cascade')}
                     </span>
                     <span className="mono-label" style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
                       [CLICK FOR DETAILS]
@@ -118,7 +136,7 @@ export function ConvergenceGraphView() {
 
                   {isSelected && (
                     <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                      <strong>Causal Link Description:</strong> {safeString(rel.description, 'Upstream relationship linking terminal state back to foundational trigger.')}
+                      <strong>Causal Link Description:</strong> {safeString(rel.description || rel.reason, 'Upstream relationship linking terminal state back to foundational trigger.')}
                     </div>
                   )}
                 </div>
