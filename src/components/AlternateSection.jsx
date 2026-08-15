@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGraph } from '../store/GraphContext.jsx';
-import { MOCK_ALTERNATE_DECISION_OPTIONS } from '../data/mockData.js';
-import { Compass, ArrowRight, GitFork, ChevronLeft, ChevronRight, Layers, Network, X, ChevronUp, ChevronDown, Bookmark, BookmarkCheck } from 'lucide-react';
+import { Compass, ArrowRight, GitFork, ChevronLeft, ChevronRight, Layers, Network, X, ChevronUp, ChevronDown, Bookmark, BookmarkCheck, Loader2, AlertCircle } from 'lucide-react';
 
 export function AlternateSection() {
   const {
@@ -46,22 +45,29 @@ export function AlternateSection() {
 
   if (!graphLocked) return null;
 
-  const cardsList = alternateState.alternateCards && alternateState.alternateCards.length > 0
+  const cardsList = alternateState.alternateCards && Array.isArray(alternateState.alternateCards)
     ? alternateState.alternateCards
-    : MOCK_ALTERNATE_DECISION_OPTIONS;
+    : [];
 
-  const currentOption = cardsList[currentIndex] || cardsList[0];
+  const isCardLoading = loadingStates.isLocking || (cardsList.length === 0 && !alternateState.isTimeout);
+  const isTimeoutState = cardsList.length === 0 && alternateState.isTimeout;
+
+  const currentOption = cardsList.length > 0 ? (cardsList[currentIndex] || cardsList[0]) : null;
 
   const handlePrev = () => {
+    if (cardsList.length === 0) return;
     setCurrentIndex((prev) => (prev === 0 ? cardsList.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
+    if (cardsList.length === 0) return;
     setCurrentIndex((prev) => (prev === cardsList.length - 1 ? 0 : prev + 1));
   };
 
   const handleExploreCurrent = () => {
-    handleExploreAlternate(currentOption);
+    if (currentOption) {
+      handleExploreAlternate(currentOption);
+    }
   };
 
   return (
@@ -95,7 +101,7 @@ export function AlternateSection() {
           backgroundColor: 'var(--bg-main)',
           borderTop: isOpen ? '1px solid var(--border-light)' : 'none',
           padding: isOpen ? '20px 32px' : '0 32px',
-          maxHeight: isOpen ? '400px' : '0px',
+          maxHeight: isOpen ? '420px' : '0px',
           opacity: isOpen ? 1 : 0,
           overflow: 'hidden',
           transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -114,7 +120,7 @@ export function AlternateSection() {
                 <span>STAGE 2: ALTERNATE COUNTER-DECISION & CONVERGENCE</span>
               </div>
               <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: '18px', fontWeight: 700, margin: '2px 0 0 0' }}>
-                Alternate Scenario Analysis Carousel ({cardsList.length} Options)
+                {isCardLoading ? 'Generating Alternate Scenarios...' : isTimeoutState ? 'Alternate Scenario Analysis' : `Alternate Scenario Analysis (${cardsList.length} Options)`}
               </h2>
             </div>
 
@@ -166,59 +172,86 @@ export function AlternateSection() {
             </div>
           </div>
 
-          {/* Carousel Experience */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button
-              className="btn-notion"
-              onClick={handlePrev}
-              style={{ padding: '12px 14px' }}
-              title="Previous alternate decision card"
-            >
-              <ChevronLeft size={20} />
-            </button>
-
-            {/* Active Carousel Card */}
-            <div
-              className="notion-card selected"
-              style={{
-                flex: 1,
-                padding: '16px 20px',
-                backgroundColor: 'var(--bg-secondary)',
-                borderWidth: '1px',
-                borderColor: '#2EAADC',
-                minHeight: '110px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span className="mono-label" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                    OPTION {currentIndex + 1} OF {cardsList.length} // {currentOption.category || currentOption.strategyType || 'Policy'}
-                  </span>
-                  <span className="mono-label" style={{ fontSize: '10px', fontWeight: 700, color: '#2EAADC' }}>
-                    [ACTIVE SELECTION]
-                  </span>
-                </div>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>
-                  {currentOption.tagline || currentOption.title || currentOption.decision?.slice(0, 90)}
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                  {currentOption.decision || currentOption.description}
-                </p>
-              </div>
+          {/* Conditional Content Area: Loading Spinner VS Timeout Warning VS Real Cards */}
+          {isCardLoading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '36px 0', gap: '12px', minHeight: '120px' }}>
+              <Loader2 size={24} className="spin" color="#2EAADC" />
+              <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                Generating alternate decision cards from World-State workflow...
+              </span>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                Polling database every 3 seconds (Up to 5 minutes max)...
+              </span>
             </div>
+          ) : isTimeoutState ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '36px 0', gap: '8px', minHeight: '120px', backgroundColor: '#FEF2F2', border: '1px dashed #FECACA', borderRadius: '8px' }}>
+              <AlertCircle size={22} color="#DC2626" />
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#991B1B' }}>
+                No alternate decision available
+              </span>
+              <span style={{ fontSize: '12px', color: '#B91C1C' }}>
+                World-State workflow did not return alternate cards within 5 minutes for session: <code style={{ fontWeight: 700 }}>{sessionId}</code>
+              </span>
+            </div>
+          ) : (
+            /* Carousel Experience for Real Cards */
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button
+                className="btn-notion"
+                onClick={handlePrev}
+                disabled={cardsList.length <= 1}
+                style={{ padding: '12px 14px' }}
+                title="Previous alternate decision card"
+              >
+                <ChevronLeft size={20} />
+              </button>
 
-            <button
-              className="btn-notion"
-              onClick={handleNext}
-              style={{ padding: '12px 14px' }}
-              title="Next alternate decision card"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
+              {/* Active Carousel Card */}
+              <div
+                className="notion-card selected"
+                style={{
+                  flex: 1,
+                  padding: '16px 20px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderWidth: '1px',
+                  borderColor: '#2EAADC',
+                  minHeight: '110px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}
+              >
+                {currentOption && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span className="mono-label" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                        OPTION {currentIndex + 1} OF {cardsList.length} // {currentOption.category || currentOption.strategyType || 'Policy'}
+                      </span>
+                      <span className="mono-label" style={{ fontSize: '10px', fontWeight: 700, color: '#2EAADC' }}>
+                        [ACTIVE SELECTION]
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>
+                      {currentOption.tagline || currentOption.title || currentOption.decision?.slice(0, 90)}
+                    </h3>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                      {currentOption.decision || currentOption.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <button
+                className="btn-notion"
+                onClick={handleNext}
+                disabled={cardsList.length <= 1}
+                style={{ padding: '12px 14px' }}
+                title="Next alternate decision card"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
 
           {/* Action Row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -259,7 +292,7 @@ export function AlternateSection() {
             <button
               className="btn-notion btn-notion-primary"
               onClick={handleExploreCurrent}
-              disabled={loadingStates.isAlternateLoading}
+              disabled={loadingStates.isAlternateLoading || isCardLoading || isTimeoutState || !currentOption}
               style={{ padding: '8px 20px', fontSize: '12px' }}
             >
               {loadingStates.isAlternateLoading ? (

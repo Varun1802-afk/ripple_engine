@@ -1,9 +1,9 @@
 import { API_BASE_URL } from '../config/api.js';
 import { executeApiRequest } from './apiClient.js';
-import { MOCK_ALTERNATE_DECISION_OPTIONS, MOCK_ALTERNATE_GRAPH, MOCK_CONVERGENCE_GRAPH } from '../data/mockData.js';
+import { MOCK_ALTERNATE_GRAPH, MOCK_CONVERGENCE_GRAPH } from '../data/mockData.js';
 
 /**
- * Retrieves alternate decision cards for a session from Railway backend.
+ * Retrieves alternate decision cards for a session from Railway backend database.
  * Endpoint: GET /api/alternate-decisions/:sessionId
  */
 export async function getAlternateCards({ sessionId }) {
@@ -18,7 +18,7 @@ export async function getAlternateCards({ sessionId }) {
       success: 'boolean',
       data: 'array of alternate decision card objects'
     },
-    mockFallbackFn: () => MOCK_ALTERNATE_DECISION_OPTIONS
+    mockFallbackFn: () => [] // DO NOT return hardcoded mock cards! Return empty array so real workflow generation is awaited.
   });
 }
 
