@@ -172,25 +172,25 @@ export function AlternateSection() {
             </div>
           </div>
 
-          {/* Conditional Content Area: Loading Spinner VS Timeout Warning VS Real Cards */}
+          {/* Conditional Content Area: Loading Spinner VS Error Notice VS Real Cards */}
           {isCardLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '36px 0', gap: '12px', minHeight: '120px' }}>
               <Loader2 size={24} className="spin" color="#2EAADC" />
               <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>
-                Generating alternate decision cards from World-State workflow...
+                Executing World-State workflow on server...
               </span>
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                Polling database every 3 seconds (Up to 5 minutes max)...
+                Awaiting workflow completion response from n8n...
               </span>
             </div>
           ) : isTimeoutState ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '36px 0', gap: '8px', minHeight: '120px', backgroundColor: '#FEF2F2', border: '1px dashed #FECACA', borderRadius: '8px' }}>
               <AlertCircle size={22} color="#DC2626" />
               <span style={{ fontSize: '14px', fontWeight: 700, color: '#991B1B' }}>
-                No alternate decision available
+                {alternateState.errorMessage || "Cannot load alternate cards"}
               </span>
               <span style={{ fontSize: '12px', color: '#B91C1C' }}>
-                World-State workflow did not return alternate cards within 5 minutes for session: <code style={{ fontWeight: 700 }}>{sessionId}</code>
+                World-State workflow did not return valid cards for session: <code style={{ fontWeight: 700 }}>{sessionId}</code>
               </span>
             </div>
           ) : (

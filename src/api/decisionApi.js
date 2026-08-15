@@ -7,10 +7,10 @@ export const PROXY_WEBHOOK_URL = "/n8n-webhook/webhook/theFirstLevel";
 
 /**
  * Sends a POST request to n8n webhook when user initiates a decision workflow.
- * Includes a strict 60-second (1 minute) abort timeout.
+ * Waits for n8n completion response before notifying frontend.
  * Endpoint: POST https://ai-arena-first.app.n8n.cloud/webhook/theFirstLevel
  * Payload: { decision }
- * Returns: { success: true, sessionId, data }
+ * Returns: { success: true, sessionId, data } or { success: false, error: "Cannot load graph..." }
  */
 export async function initiateFirstLevelWorkflow({ decision }) {
   console.log("🚀 Initiating POST Request to First Level Webhook with decision:", { decision });
@@ -19,12 +19,11 @@ export async function initiateFirstLevelWorkflow({ decision }) {
   const headers = { "Content-Type": "application/json" };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s (1 min) timeout
+  const timeoutId = setTimeout(() => controller.abort(), 120000); // 2-min timeout for long workflow completion
 
   let response = null;
 
   try {
-    // 1. Try direct fetch to n8n webhook URL with 60s timeout signal
     console.log(" Attempting direct fetch:", DIRECT_WEBHOOK_URL);
     response = await fetch(DIRECT_WEBHOOK_URL, {
       method: "POST",
@@ -35,16 +34,15 @@ export async function initiateFirstLevelWorkflow({ decision }) {
   } catch (directErr) {
     if (directErr.name === 'AbortError') {
       clearTimeout(timeoutId);
-      console.error("⏱️ Webhook request timed out after 60 seconds (1 minute)");
+      console.error("⏱️ Webhook request timed out after 2 minutes");
       return { 
         success: false, 
-        error: "Resources could not be loaded. Request timed out after 1 minute.", 
+        error: "Cannot load graph. Workflow execution timed out on server.", 
         sessionId: null 
       };
     }
 
     console.warn("⚠️ Direct fetch failed (likely CORS), attempting Vite proxy fallback...", directErr);
-    // 2. Fallback to Vite proxy endpoint (/n8n-webhook/webhook/theFirstLevel)
     try {
       response = await fetch(PROXY_WEBHOOK_URL, {
         method: "POST",
@@ -57,19 +55,19 @@ export async function initiateFirstLevelWorkflow({ decision }) {
       if (proxyErr.name === 'AbortError') {
         return { 
           success: false, 
-          error: "Resources could not be loaded. Request timed out after 1 minute.", 
+          error: "Cannot load graph. Workflow execution timed out on server.", 
           sessionId: null 
         };
       }
       console.error("❌ Both direct and proxy fetches failed:", proxyErr);
-      return { success: false, error: proxyErr.message || "Resources could not be loaded.", sessionId: null };
+      return { success: false, error: "Cannot load graph. Unable to reach workflow server.", sessionId: null };
     }
   } finally {
     clearTimeout(timeoutId);
   }
 
   if (!response || !response.ok) {
-    return { success: false, error: `Resources could not be loaded. Webhook status ${response ? response.status : 'error'}`, sessionId: null };
+    return { success: false, error: `Cannot load graph. Workflow server returned status ${response ? response.status : 'error'}`, sessionId: null };
   }
 
   const rawText = await response.text();
@@ -82,7 +80,18 @@ export async function initiateFirstLevelWorkflow({ decision }) {
     data = { rawText };
   }
 
-  // Extract returned sessionId (supporting sessionId, session_id, id, or array payload)
+  // Check workflow completion status
+  if (typeof data === 'object' && data !== null) {
+    if (data.success === false || data.status === 'failed') {
+      return {
+        success: false,
+        error: data.error || data.message || "Cannot load graph. Workflow execution failed on server.",
+        sessionId: null
+      };
+    }
+  }
+
+  // Extract returned sessionId
   let extractedSessionId = null;
   if (typeof data === 'object' && data !== null) {
     if (Array.isArray(data) && data.length > 0) {
@@ -109,7 +118,7 @@ export async function initiateFirstLevelWorkflow({ decision }) {
 export async function triggerWorldStateWebhook({ sessionId }) {
   console.log("🔒 Sending POST to World-State Webhook:", sessionId);
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
 
   try {
     const res = await fetch("https://ai-arena-first.app.n8n.cloud/webhook/World-State", {
@@ -119,7 +128,17 @@ export async function triggerWorldStateWebhook({ sessionId }) {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
-    return { success: res.ok };
+
+    if (!res.ok) {
+      return { success: false, error: `Cannot load alternate cards. Webhook status ${res.status}` };
+    }
+
+    const data = await res.json().catch(() => ({}));
+    if (data.success === false || data.status === 'failed') {
+      return { success: false, error: data.error || "Cannot load alternate cards. World-State workflow failed." };
+    }
+
+    return { success: true, data };
   } catch (err) {
     console.warn("⚠️ World-State direct POST warning, attempting proxy fallback:", err);
     try {
@@ -130,11 +149,21 @@ export async function triggerWorldStateWebhook({ sessionId }) {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
-      return { success: res.ok };
+
+      if (!res.ok) {
+        return { success: false, error: `Cannot load alternate cards. Webhook status ${res.status}` };
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (data.success === false || data.status === 'failed') {
+        return { success: false, error: data.error || "Cannot load alternate cards. World-State workflow failed." };
+      }
+
+      return { success: true, data };
     } catch (proxyErr) {
       clearTimeout(timeoutId);
       console.error("❌ World-State Webhook Error:", proxyErr);
-      return { success: false, error: "Resources could not be loaded." };
+      return { success: false, error: "Cannot load alternate cards. Webhook server error." };
     }
   }
 }
@@ -147,7 +176,7 @@ export async function triggerWorldStateWebhook({ sessionId }) {
 export async function triggerAlternateBranchWebhook({ sessionId, alternateId }) {
   console.log("🧭 Sending POST to Alternate Branch Webhook:", { sessionId, alternateId });
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
 
   try {
     const res = await fetch("https://decision-planner.app.n8n.cloud/webhook/ce2ef43b-5d9f-4465-a52d-df3ee1ea1fd3", {
@@ -157,11 +186,21 @@ export async function triggerAlternateBranchWebhook({ sessionId, alternateId }) 
       signal: controller.signal
     });
     clearTimeout(timeoutId);
-    return { success: res.ok };
+
+    if (!res.ok) {
+      return { success: false, error: `Cannot load alternate graph. Webhook status ${res.status}` };
+    }
+
+    const data = await res.json().catch(() => ({}));
+    if (data.success === false || data.status === 'failed') {
+      return { success: false, error: data.error || "Cannot load alternate graph. Workflow failed on server." };
+    }
+
+    return { success: true, data };
   } catch (err) {
     clearTimeout(timeoutId);
     console.error("❌ Alternate Branch Webhook Error:", err);
-    return { success: false, error: "Resources could not be loaded." };
+    return { success: false, error: "Cannot load alternate graph. Webhook server error." };
   }
 }
 
@@ -173,7 +212,7 @@ export async function triggerAlternateBranchWebhook({ sessionId, alternateId }) 
 export async function triggerConvergenceWebhook({ sessionId }) {
   console.log("🕸️ Sending POST to Convergence Webhook (expand-more):", sessionId);
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
 
   try {
     const res = await fetch("https://ai-arena-first.app.n8n.cloud/webhook/expand-more", {
@@ -183,7 +222,17 @@ export async function triggerConvergenceWebhook({ sessionId }) {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
-    return { success: res.ok };
+
+    if (!res.ok) {
+      return { success: false, error: `Cannot load convergence graph. Webhook status ${res.status}` };
+    }
+
+    const data = await res.json().catch(() => ({}));
+    if (data.success === false || data.status === 'failed') {
+      return { success: false, error: data.error || "Cannot load convergence graph. Workflow failed on server." };
+    }
+
+    return { success: true, data };
   } catch (err) {
     console.warn("⚠️ Convergence direct POST warning, attempting proxy fallback:", err);
     try {
@@ -194,11 +243,21 @@ export async function triggerConvergenceWebhook({ sessionId }) {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
-      return { success: res.ok };
+
+      if (!res.ok) {
+        return { success: false, error: `Cannot load convergence graph. Webhook status ${res.status}` };
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (data.success === false || data.status === 'failed') {
+        return { success: false, error: data.error || "Cannot load convergence graph. Workflow failed on server." };
+      }
+
+      return { success: true, data };
     } catch (proxyErr) {
       clearTimeout(timeoutId);
       console.error("❌ Convergence Webhook Error:", proxyErr);
-      return { success: false, error: "Resources could not be loaded." };
+      return { success: false, error: "Cannot load convergence graph. Webhook server error." };
     }
   }
 }

@@ -217,42 +217,47 @@ export function GraphProvider({ children }) {
     setAlternateState((prev) => ({
       ...prev,
       alternateCards: [],
-      isTimeout: false
+      isTimeout: false,
+      errorMessage: null
     }));
 
     try {
-      // 1. Send POST request to World-State webhook https://ai-arena-first.app.n8n.cloud/webhook/World-State
-      await triggerWorldStateWebhook({ sessionId });
+      // 1. Send POST request to World-State webhook & WAIT for completion response
+      const webhookRes = await triggerWorldStateWebhook({ sessionId });
 
-      // 2. Poll DB GET /api/alternate-decisions/:sessionId for alternate cards
-      // Poll every 3 seconds for up to 5 minutes (100 attempts * 3s = 300 seconds = 5 min)
-      let attempts = 0;
-      if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
-
-      pollingTimerRef.current = setInterval(async () => {
-        attempts++;
+      if (webhookRes.success) {
+        // 2. Fetch generated alternate cards directly from DB once
         const altCardsRes = await getAlternateCards({ sessionId });
         if (altCardsRes.success && Array.isArray(altCardsRes.data) && altCardsRes.data.length > 0) {
           setAlternateState((prev) => ({
             ...prev,
             alternateCards: altCardsRes.data,
-            isTimeout: false
+            isTimeout: false,
+            errorMessage: null
           }));
-          clearInterval(pollingTimerRef.current);
-          setLoadingStates((prev) => ({ ...prev, isLocking: false }));
-        } else if (attempts >= 100) {
-          // 5-minute timeout reached
-          console.warn("⏱️ World-State card polling timed out after 5 minutes (300 seconds)");
-          clearInterval(pollingTimerRef.current);
+        } else {
           setAlternateState((prev) => ({
             ...prev,
-            isTimeout: true
+            isTimeout: true,
+            errorMessage: "No alternate decision available"
           }));
-          setLoadingStates((prev) => ({ ...prev, isLocking: false }));
         }
-      }, 3000);
+      } else {
+        console.warn("⚠️ World-State webhook reported failure:", webhookRes);
+        setAlternateState((prev) => ({
+          ...prev,
+          isTimeout: true,
+          errorMessage: webhookRes.error || "Cannot load alternate cards. World-State workflow failed."
+        }));
+      }
     } catch (err) {
       console.error('Lock graph webhook error:', err);
+      setAlternateState((prev) => ({
+        ...prev,
+        isTimeout: true,
+        errorMessage: "Cannot load alternate cards. Server connection error."
+      }));
+    } finally {
       setLoadingStates((prev) => ({ ...prev, isLocking: false }));
     }
   };
@@ -262,15 +267,13 @@ export function GraphProvider({ children }) {
     setLoadingStates((prev) => ({ ...prev, isAlternateLoading: true }));
 
     try {
-      const altId = alternateOption.alternateId || alternateOption.alternateId || alternateOption.id || 'alt_001';
+      const altId = alternateOption.alternateId || alternateOption.id || 'alt_001';
 
-      // 1. Send POST request to alternate decision webhook https://decision-planner.app.n8n.cloud/webhook/ce2ef43b-5d9f-4465-a52d-df3ee1ea1fd3
-      await triggerAlternateBranchWebhook({ sessionId, alternateId: altId });
+      // 1. Send POST request to alternate decision webhook & WAIT for completion response
+      const webhookRes = await triggerAlternateBranchWebhook({ sessionId, alternateId: altId });
 
-      // 2. Poll DB for alternate graph tree nodes (Up to 30 attempts x 2s = 60s timeout)
-      let attempts = 0;
-      const pollAltNodes = setInterval(async () => {
-        attempts++;
+      if (webhookRes.success) {
+        // 2. Fetch alternate tree nodes directly from DB once
         const altGraphRes = await getAlternateGraph({
           alternateDecisionId: altId,
           alternateOptionId: altId,
@@ -279,39 +282,36 @@ export function GraphProvider({ children }) {
 
         if (altGraphRes.success && altGraphRes.data) {
           const altNodes = (Array.isArray(altGraphRes.data) ? altGraphRes.data : altGraphRes.data.nodes) || [];
-          if (altNodes.length > 0) {
-            const normalizedAltNodes = altNodes.map((n) => ({
-              ...n,
-              id: n.id || n._id,
-              level: n.graphLevel || n.level || 1,
-              title: n.label || n.title || 'Alternate Node',
-              label: n.label || n.title || 'Alternate Node'
-            }));
+          const normalizedAltNodes = altNodes.map((n) => ({
+            ...n,
+            id: n.id || n._id,
+            level: Number(n.graphLevel || n.level || 1),
+            title: safeString(n.label || n.title, 'Alternate Node'),
+            label: safeString(n.label || n.title, 'Alternate Node'),
+            category: safeString(n.domain || n.category, 'General'),
+            domain: safeString(n.domain || n.category, 'General')
+          }));
 
-            setAlternateState((prev) => ({
-              ...prev,
-              alternateDecision: alternateOption,
-              alternateGraphId: altId,
-              nodes: normalizedAltNodes,
-              selectedNodeId: normalizedAltNodes[0].id,
-              isExploring: true
-            }));
+          setAlternateState((prev) => ({
+            ...prev,
+            alternateDecision: alternateOption,
+            alternateGraphId: altId,
+            nodes: normalizedAltNodes.length > 0 ? normalizedAltNodes : COMPLETE_4_LEVEL_BACKUP_GRAPH,
+            selectedNodeId: (normalizedAltNodes[0] || COMPLETE_4_LEVEL_BACKUP_GRAPH[0]).id,
+            isExploring: true
+          }));
 
-            setActiveView('alternate_graph');
-            clearInterval(pollAltNodes);
-            setLoadingStates((prev) => ({ ...prev, isAlternateLoading: false }));
-          }
+          setActiveView('alternate_graph');
+        } else {
+          alert("Cannot load alternate graph. Database returned no nodes.");
         }
-
-        if (attempts >= 30) {
-          console.warn("⏱️ Alternate graph polling timed out after 60 seconds (1 minute)");
-          clearInterval(pollAltNodes);
-          setLoadingStates((prev) => ({ ...prev, isAlternateLoading: false }));
-        }
-      }, 2000);
-
+      } else {
+        alert(webhookRes.error || "Cannot load alternate graph. Workflow failed on server.");
+      }
     } catch (err) {
       console.error('Failed to explore alternate decision:', err);
+      alert("Cannot load alternate graph. Webhook server error.");
+    } finally {
       setLoadingStates((prev) => ({ ...prev, isAlternateLoading: false }));
     }
   };
@@ -322,13 +322,11 @@ export function GraphProvider({ children }) {
     setLoadingStates((prev) => ({ ...prev, isConvergenceLoading: true }));
 
     try {
-      // 1. Send POST request to convergence webhook https://ai-arena-first.app.n8n.cloud/webhook/expand-more
-      await triggerConvergenceWebhook({ sessionId });
+      // 1. Send POST request to convergence webhook & WAIT for completion response
+      const webhookRes = await triggerConvergenceWebhook({ sessionId });
 
-      // 2. Poll GET /api/alternate-decisions/convergence-graph/:sessionId
-      let attempts = 0;
-      const pollConvData = setInterval(async () => {
-        attempts++;
+      if (webhookRes.success) {
+        // 2. Fetch convergence matrix directly from DB once
         const convRes = await getConvergenceGraph({ sessionId });
 
         if (convRes.success && convRes.data) {
@@ -337,17 +335,16 @@ export function GraphProvider({ children }) {
             isLoaded: true
           });
           setActiveView('convergence_graph');
-          clearInterval(pollConvData);
-          setLoadingStates((prev) => ({ ...prev, isConvergenceLoading: false }));
-        } else if (attempts >= 30) {
-          console.warn("⏱️ Convergence matrix polling timed out after 60 seconds (1 minute)");
-          clearInterval(pollConvData);
-          setLoadingStates((prev) => ({ ...prev, isConvergenceLoading: false }));
+        } else {
+          alert("Cannot load convergence graph. Database returned no matrix data.");
         }
-      }, 2000);
-
+      } else {
+        alert(webhookRes.error || "Cannot load convergence graph. Workflow failed on server.");
+      }
     } catch (err) {
       console.error('Failed to load convergence graph:', err);
+      alert("Cannot load convergence graph. Server connection error.");
+    } finally {
       setLoadingStates((prev) => ({ ...prev, isConvergenceLoading: false }));
     }
   };
