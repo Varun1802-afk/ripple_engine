@@ -147,17 +147,17 @@ export function AlternateSection() {
                   </button>
                 )}
 
-                {alternateState.isExploring && (
-                  <button
-                    className={`btn-notion ${activeView === 'convergence_graph' ? 'btn-notion-primary' : 'btn-notion'}`}
-                    onClick={fetchConvergenceGraph}
-                    disabled={loadingStates.isConvergenceLoading}
-                    style={{ padding: '5px 12px', fontSize: '12px' }}
-                  >
-                    <Network size={13} />
-                    <span>Convergence Graph</span>
-                  </button>
-                )}
+                {/* Convergence Graph Navigation Button — Always visible when drawer is open! */}
+                <button
+                  className={`btn-notion ${activeView === 'convergence_graph' ? 'btn-notion-primary' : 'btn-notion'}`}
+                  onClick={fetchConvergenceGraph}
+                  disabled={loadingStates.isConvergenceLoading}
+                  style={{ padding: '5px 12px', fontSize: '12px' }}
+                  title="Inspect Upstream Causal Convergence Graph"
+                >
+                  <Network size={13} />
+                  <span>Convergence Graph</span>
+                </button>
               </div>
 
               {/* Close Drawer Button */}

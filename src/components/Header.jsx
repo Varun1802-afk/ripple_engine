@@ -22,6 +22,7 @@ export function Header() {
     setActiveView, 
     graphLocked, 
     alternateState, 
+    loadingStates,
     fetchConvergenceGraph, 
     theme, 
     toggleTheme, 
@@ -115,7 +116,7 @@ export function Header() {
       {/* Right Group: Views, Actions & User Account Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
         {/* Navigation Tabs when viewing graph */}
-        {activeView !== 'input' && (
+        {activeView !== 'input' && activeView !== 'landing' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <button
               className={`btn-notion ${activeView === 'original_graph' ? 'btn-notion-primary' : ''}`}
@@ -137,16 +138,17 @@ export function Header() {
               </button>
             )}
 
-            {alternateState.isExploring && (
-              <button
-                className={`btn-notion ${activeView === 'convergence_graph' ? 'btn-notion-primary' : ''}`}
-                onClick={fetchConvergenceGraph}
-                style={{ padding: '4px 8px', fontSize: '11px', gap: '4px', display: 'inline-flex', alignItems: 'center' }}
-              >
-                <Network size={12} />
-                <span>Convergence</span>
-              </button>
-            )}
+            {/* Convergence Graph Navigation Button — Always visible on Graph Views */}
+            <button
+              className={`btn-notion ${activeView === 'convergence_graph' ? 'btn-notion-primary' : ''}`}
+              onClick={fetchConvergenceGraph}
+              disabled={loadingStates.isConvergenceLoading}
+              style={{ padding: '4px 8px', fontSize: '11px', gap: '4px', display: 'inline-flex', alignItems: 'center' }}
+              title="Inspect Upstream Causal Convergence Graph"
+            >
+              <Network size={12} />
+              <span>Convergence</span>
+            </button>
           </div>
         )}
 
@@ -163,76 +165,46 @@ export function Header() {
           </button>
         )}
 
-
-
         {/* User Account Profile Pill & Logout Button */}
         {user ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span
+              className="mono-label"
               style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
+                fontSize: '10px',
+                padding: '3px 8px',
+                backgroundColor: 'rgba(0,0,0,0.06)',
+                borderRadius: '4px',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
-                padding: '4px 10px',
-                backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                border: '1px solid rgba(16, 185, 129, 0.35)',
-                borderRadius: '6px'
+                gap: '4px'
               }}
             >
-              <User size={12} className="text-emerald-600" />
-              <span>{user.displayName || user.email?.split('@')[0]}</span>
+              <User size={11} />
+              <span>{user.email || 'Logged In'}</span>
             </span>
 
             <button
               className="btn-notion"
               onClick={logoutUser}
-              style={{
-                padding: '4px 10px',
-                fontSize: '11px',
-                backgroundColor: '#FEF2F2',
-                color: '#DC2626',
-                borderColor: '#FCA5A5',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                fontWeight: 600
-              }}
-              title="Logout of session"
+              style={{ padding: '4px 8px', fontSize: '10px' }}
+              title="Log out of account"
             >
               <LogOut size={12} />
-              <span>Logout</span>
             </button>
           </div>
-        ) : (
-          <button
-            className="btn-notion"
-            onClick={() => setActiveView('landing')}
-            style={{ padding: '4px 10px', fontSize: '11px', gap: '5px', display: 'inline-flex', alignItems: 'center' }}
-          >
-            <User size={12} />
-            <span>Login</span>
-          </button>
-        )}
+        ) : null}
 
-        {/* Lock / Draft Status Badge */}
-        {activeView !== 'input' && (
-          <div className="brand-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '4px 8px', fontSize: '10px' }}>
-            {graphLocked ? (
-              <>
-                <Lock size={11} color="#4D1F1F" />
-                <span style={{ color: '#4D1F1F', fontWeight: 600 }}>LOCKED</span>
-              </>
-            ) : (
-              <>
-                <Layers size={11} />
-                <span>DRAFT</span>
-              </>
-            )}
-          </div>
-        )}
+        {/* Dev Debug Log Trigger Button */}
+        <button
+          className="btn-notion"
+          onClick={toggleDebugPanel}
+          style={{ padding: '4px 8px', fontSize: '11px', gap: '4px', display: 'inline-flex', alignItems: 'center' }}
+          title="Open Developer Request Inspector"
+        >
+          <Terminal size={12} />
+          <span className="mono-label" style={{ fontSize: '10px' }}>LOGS ({requestLogs.length})</span>
+        </button>
       </div>
     </header>
   );
