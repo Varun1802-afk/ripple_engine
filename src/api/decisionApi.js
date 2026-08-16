@@ -52,48 +52,47 @@ export async function initiateFirstLevelWorkflow({ decision }) {
       });
     } catch (proxyErr) {
       clearTimeout(timeoutId);
-      if (proxyErr.name === 'AbortError') {
-        return { 
-          success: false, 
-          error: "Cannot load graph. Workflow execution timed out on server.", 
-          sessionId: null 
-        };
-      }
-      console.error("❌ Both direct and proxy fetches failed:", proxyErr);
-      return { success: false, error: "Cannot load graph. Unable to reach workflow server.", sessionId: null };
-    }
-  } finally {
-    clearTimeout(timeoutId);
-  }
-
-  if (!response || !response.ok) {
-    return { success: false, error: `Cannot load graph. Workflow server returned status ${response ? response.status : 'error'}`, sessionId: null };
-  }
-
-  const rawText = await response.text();
-  console.log("✅ First Level Webhook Raw Response Text:", rawText);
-
-  let data = null;
-  try {
-    data = JSON.parse(rawText);
-  } catch (parseErr) {
-    data = { rawText };
-  }
-
-  // Check workflow completion status
-  if (typeof data === 'object' && data !== null) {
-    if (data.success === false || data.status === 'failed') {
-      return {
-        success: false,
-        error: data.error || data.message || "Cannot load graph. Workflow execution failed on server.",
-        sessionId: null
+      console.error("❌ Both direct and proxy fetch attempts failed:", proxyErr);
+      return { 
+        success: false, 
+        error: "Cannot load graph. Network or CORS connection error.", 
+        sessionId: null 
       };
     }
   }
 
-  // Extract returned sessionId
+  clearTimeout(timeoutId);
+
+  if (!response.ok) {
+    console.error(`❌ Webhook returned error HTTP status: ${response.status}`);
+    return { 
+      success: false, 
+      error: `Cannot load graph. Server returned status ${response.status}`, 
+      sessionId: null 
+    };
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+    console.log("✅ Received Webhook Completion Response:", data);
+  } catch (parseErr) {
+    console.warn("⚠️ Webhook response was not JSON:", parseErr);
+    return { success: false, error: "Cannot load graph. Invalid response format from server.", sessionId: null };
+  }
+
+  if (data && (data.success === false || data.status === 'failed')) {
+    console.error("❌ Webhook returned failure status:", data);
+    return { 
+      success: false, 
+      error: data.error || "Cannot load graph. Workflow execution failed on server.", 
+      sessionId: null 
+    };
+  }
+
+  // Extract sessionId from response payload
   let extractedSessionId = null;
-  if (typeof data === 'object' && data !== null) {
+  if (data && typeof data === 'object') {
     if (Array.isArray(data) && data.length > 0) {
       extractedSessionId = data[0].sessionId || data[0].session_id || data[0].id;
     } else {
@@ -263,14 +262,14 @@ export async function triggerConvergenceWebhook({ sessionId }) {
 }
 
 /**
- * Creates or fetches a decision analysis session.
+ * Creates or fetches a decision analysis session (HTTP Method 1: GET /api/sessions/:sessionId).
  */
 export async function createDecision({ decision, sessionId }) {
   const isLive = typeof WORKFLOW_1_URL === 'string' && WORKFLOW_1_URL.length > 0;
   const targetUrl = isLive ? `${API_BASE_URL}/api/sessions/${sessionId}` : WORKFLOW_1_URL;
 
   return executeApiRequest({
-    endpointName: 'WORKFLOW_1_URL (Get/Create Decision Session)',
+    endpointName: 'GET_SESSION (GET /api/sessions/:sessionId)',
     url: targetUrl,
     method: isLive ? 'GET' : 'POST',
     body: {
@@ -291,6 +290,8 @@ export async function createDecision({ decision, sessionId }) {
     })
   });
 }
+
+export const fetchDecisionSession = createDecision;
 
 /**
  * Initiates an alternate decision exploration path.
