@@ -47,21 +47,29 @@ export const loginWithEmail = async (email, password) => {
     const result = await signInWithEmailAndPassword(auth, email, password);
     return { success: true, user: result.user };
   } catch (error) {
-    console.warn("SignIn failed, trying CreateAccount:", error.code);
+    let msg = error.message;
     if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-      try {
-        const newResult = await createUserWithEmailAndPassword(auth, email, password);
-        return { success: true, user: newResult.user };
-      } catch (createErr) {
-        let createMsg = createErr.message;
-        if (createErr.code === 'auth/email-already-in-use') {
-          createMsg = 'Incorrect password for existing account';
-        } else if (createErr.code === 'auth/weak-password') {
-          createMsg = 'Password should be at least 6 characters';
-        }
-        return { success: false, error: createMsg };
-      }
+      msg = 'Invalid email or password. Please check your credentials or click Sign Up.';
+    } else if (error.code === 'auth/wrong-password') {
+      msg = 'Incorrect password. Please try again.';
     }
-    return { success: false, error: error.message };
+    return { success: false, error: msg };
+  }
+};
+
+export const signUpWithEmail = async (email, password) => {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    return { success: true, user: result.user };
+  } catch (error) {
+    let msg = error.message;
+    if (error.code === 'auth/email-already-in-use') {
+      msg = 'An account with this email already exists. Please sign in instead.';
+    } else if (error.code === 'auth/weak-password') {
+      msg = 'Password should be at least 6 characters.';
+    } else if (error.code === 'auth/invalid-email') {
+      msg = 'Please enter a valid email address.';
+    }
+    return { success: false, error: msg };
   }
 };

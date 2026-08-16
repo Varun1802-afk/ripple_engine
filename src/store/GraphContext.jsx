@@ -280,6 +280,7 @@ export function GraphProvider({ children }) {
   // STEP 1 & 3: Load Existing Session
   // - Uses HTTP Method 1 (GET /api/sessions/:sessionId) to fetch root decision
   // - Uses HTTP Method 3 (GET /api/nodes?sessionId=:sessionId&graphLevel=1) to fetch Level 1 nodes
+  // - Resets graphLocked to false so fetched sessions are NOT locked by default!
   // ---------------------------------------------------------------------------
   const loadExistingSession = async (targetSessionId) => {
     if (!targetSessionId) return;
@@ -351,6 +352,10 @@ export function GraphProvider({ children }) {
       }
 
       setGraphId(targetSessionId);
+
+      // UNLOCK GRAPH ON SESSION LOAD (User Directive: "when the user fetches a session again the graph should not be locked")
+      setGraphLocked(false);
+
       setActiveView('original_graph');
     } catch (err) {
       console.error('Failed to load existing session:', err);
