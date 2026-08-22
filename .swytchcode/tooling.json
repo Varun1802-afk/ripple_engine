@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "mode": "production",
+  "editor": "vscode",
+  "integrations": {
+    "openai": {
+      "version": "1.0.0",
+      "provider": "openai",
+      "status": "active"
+    }
+  },
+  "tools": [
+    "openai.chat.completions.create"
+  ]
+}

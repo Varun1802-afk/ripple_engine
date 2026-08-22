@@ -7,6 +7,7 @@ import {
   getAlternateGraph, 
   getConvergenceGraph 
 } from '../api/alternateApi.js';
+import { concludeDecisionSession } from '../api/conclusionApi.js';
 
 const initialDecision = MOCK_ORIGINAL_GRAPH.decision;
 const initialNodes = MOCK_ORIGINAL_GRAPH.nodes;
@@ -163,14 +164,62 @@ export function GraphProvider({ children }) {
     errorMessage: null
   });
 
+  // Conclusion State ("Help Me Conclude")
+  const [conclusionState, setConclusionState] = useState({
+    isOpen: false,
+    data: null,
+    errorMessage: null
+  });
+
   // Granular Loading States
   const [loadingStates, setLoadingStates] = useState({
     isGraphLoading: false,
     isLocking: false,
     isAlternateLoading: false,
     isConvergenceLoading: false,
+    isConcluding: false,
     expandingNodeId: null
   });
+
+  // Action: "Help Me Conclude" Decision via Swytchcode
+  const handleConcludeDecision = async () => {
+    setConclusionState((prev) => ({ ...prev, isOpen: true, errorMessage: null }));
+    setLoadingStates((prev) => ({ ...prev, isConcluding: true }));
+
+    try {
+      const res = await concludeDecisionSession({
+        sessionId: graphId,
+        decision,
+        nodes,
+        alternateState
+      });
+
+      if (res.success && res.data) {
+        setConclusionState((prev) => ({
+          ...prev,
+          data: res.data,
+          errorMessage: null
+        }));
+      } else {
+        setConclusionState((prev) => ({
+          ...prev,
+          errorMessage: res.error || "Failed to conclude decision analysis."
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to conclude decision:", err);
+      setConclusionState((prev) => ({
+        ...prev,
+        errorMessage: "Error executing Swytchcode conclusion runtime."
+      }));
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, isConcluding: false }));
+    }
+  };
+
+  const closeConclusionModal = () => {
+    setConclusionState((prev) => ({ ...prev, isOpen: false }));
+  };
 
   // Action: Select Node
   const handleSelectNode = (nodeId, isAlt = false) => {
@@ -547,6 +596,9 @@ export function GraphProvider({ children }) {
         handleExploreAlternate,
         convergenceState,
         fetchConvergenceGraph,
+        conclusionState,
+        handleConcludeDecision,
+        closeConclusionModal,
         loadExistingSession,
         loadingStates
       }}

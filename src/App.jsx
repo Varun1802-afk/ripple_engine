@@ -10,6 +10,7 @@ import { GraphCanvas } from './components/GraphCanvas.jsx';
 import { DebugPanel } from './components/DebugPanel.jsx';
 import { FeatherCursor } from './components/FeatherCursor.jsx';
 import { LoaderOverlay } from './components/LoaderOverlay.jsx';
+import { ConclusionModal } from './components/ConclusionModal.jsx';
 
 import { PageTransition } from './components/PageTransition.jsx';
 
@@ -17,7 +18,14 @@ import './styles/index.css';
 import './styles/notion.css';
 
 function MainAppLayout() {
-  const { activeView } = useGraph();
+  const { 
+    activeView, 
+    conclusionState, 
+    closeConclusionModal, 
+    handleConcludeDecision, 
+    loadingStates, 
+    decision 
+  } = useGraph();
 
   if (activeView === 'landing') {
     return <LandingPage />;
@@ -38,6 +46,17 @@ function MainAppLayout() {
       <DebugPanel />
       <FeatherCursor />
       <LoaderOverlay />
+
+      {/* "Help Me Conclude" Swytchcode Modal */}
+      <ConclusionModal
+        isOpen={conclusionState.isOpen}
+        onClose={closeConclusionModal}
+        conclusionData={conclusionState.data}
+        isLoading={loadingStates.isConcluding}
+        errorMessage={conclusionState.errorMessage}
+        onRetry={handleConcludeDecision}
+        decision={decision}
+      />
     </div>
   );
 }

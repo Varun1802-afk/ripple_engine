@@ -1,0 +1,23 @@
+{
+  "name": "openai",
+  "version": "1.0.0",
+  "provider": "openai",
+  "description": "Official Swytchcode OpenAI integration bundle for chat completions and structured decision conclusions",
+  "actions": [
+    {
+      "name": "openai.chat.completions.create",
+      "description": "Generates structured decision conclusion payload from multi-level consequence graph and world state",
+      "method": "POST",
+      "readOnly": false,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "model": { "type": "string" },
+          "messages": { "type": "array" },
+          "response_format": { "type": "object" }
+        },
+        "required": ["messages"]
+      }
+    }
+  ]
+}

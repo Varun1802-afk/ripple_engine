@@ -5,7 +5,8 @@ import { InfoPanel } from './InfoPanel.jsx';
 import { AlternateSection } from './AlternateSection.jsx';
 import { ConvergenceGraphView } from './ConvergenceGraphView.jsx';
 import { VerticalStem, BranchConnector, TreeDefs } from './TreeConnector.jsx';
-import { Lock, Layers, GitFork, Loader2, Database, ZoomIn, ZoomOut, Maximize2, RotateCcw, Box } from 'lucide-react';
+import { Lock, Layers, GitFork, Loader2, Database, ZoomIn, ZoomOut, Maximize2, RotateCcw, Download, Image as ImageIcon, FileCode, Check } from 'lucide-react';
+import { downloadGraphAsImage, downloadGraphAsJSON } from '../utils/exportGraph.js';
 
 /**
  * Recursive Tree Branch Renderer
@@ -58,56 +59,42 @@ function NodeBranch({ node, allNodes, isAlternate = false, isFirstChild = false,
         <VerticalStem height={20} isAnimating={isStemGrowing} hasArrow={true} />
       </div>
 
-      {/* 2. Ultra-Compact Physical Stackable Paper Card (145px width) */}
-      <CompactTreeNode node={node} isAlternate={isAlternate} />
+      {/* 2. Compact Tree Node Card */}
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <CompactTreeNode node={node} isAlternate={isAlternate} />
+      </div>
 
-      {/* 2. Inline Async Database Loading State */}
-      {isGeneratingBranch && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '4px' }}>
-          <VerticalStem height={20} isAnimating={true} />
-          <div
-            className="notion-node-card"
-            style={{
-              padding: '6px 12px',
-              fontSize: '11px',
-              color: 'var(--text-secondary)',
-              backgroundColor: 'var(--bg-secondary)',
-              borderStyle: 'dashed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Loader2 size={12} className="spin" color="var(--diorama-connector)" />
-            <Database size={11} />
-            <span>Generating child consequences in DB...</span>
-          </div>
-        </div>
-      )}
-
-      {/* 3. Render organic root stem & child branch */}
-      {isExpanded && (children.length > 0 || isStemGrowing) && (
+      {/* 3. Branch Extension Area */}
+      {isExpanded && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-          <BranchConnector childCount={children.length} isAnimating={isStemGrowing} />
+          
+          {/* Stem extending DOWN from parent node */}
+          <VerticalStem height={24} isAnimating={isStemGrowing} />
 
-          {/* Child nodes reveal after root stem extends */}
-          {showChildren && children.length > 0 && (
-            <div
-              className="children-reveal-animated"
-              style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}
-            >
-              {children.map((childNode, idx) => (
-                <NodeBranch
-                  key={childNode.id || childNode._id}
-                  node={childNode}
-                  allNodes={allNodes}
-                  isAlternate={isAlternate}
-                  isFirstChild={idx === 0}
-                  isLastChild={idx === children.length - 1}
-                  isOnlyChild={children.length === 1}
-                />
-              ))}
+          {/* Loader indicator while expanding branch */}
+          {isGeneratingBranch ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#F8F5EE', border: '1px solid var(--border-diorama)', borderRadius: '6px' }}>
+              <Loader2 size={14} className="spin" color="var(--diorama-connector)" />
+              <span className="mono-label" style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                Extending Consequence Branch...
+              </span>
             </div>
+          ) : (
+            showChildren && children.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', position: 'relative', paddingTop: '0px' }}>
+                {children.map((childNode, idx) => (
+                  <NodeBranch
+                    key={childNode.id || childNode._id}
+                    node={childNode}
+                    allNodes={allNodes}
+                    isAlternate={isAlternate}
+                    isFirstChild={idx === 0}
+                    isLastChild={idx === children.length - 1}
+                    isOnlyChild={children.length === 1}
+                  />
+                ))}
+              </div>
+            )
           )}
         </div>
       )}
@@ -116,57 +103,40 @@ function NodeBranch({ node, allNodes, isAlternate = false, isFirstChild = false,
 }
 
 export function GraphCanvas() {
-  const {
-    activeView,
-    decision,
-    nodes,
-    graphLocked,
-    lockGraph,
-    alternateState,
-    loadingStates,
-    selectedNode
-  } = useGraph();
-
-  // Zoom & Pan State
-  const [zoomScale, setZoomScale] = useState(0.95);
-  const [panPos, setPanPos] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const { activeView, nodes, decision, alternateState, graphLocked, lockGraph, sessionId } = useGraph();
 
   const canvasViewportRef = useRef(null);
   const canvasContainerRef = useRef(null);
 
-  // Smooth scroll centering on node expansion
-  useEffect(() => {
-    if (selectedNode && canvasContainerRef.current) {
-      const container = canvasContainerRef.current;
-      container.scrollTo({
-        top: container.scrollHeight / 3,
-        behavior: 'smooth'
-      });
-    }
-  }, [loadingStates.expandingNodeId, selectedNode?.expanded]);
+  // Pan & Zoom State
+  const [zoomScale, setZoomScale] = useState(0.85);
+  const [panPos, setPanPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // Auto Mobile Zoom Scale Adjustment
+  // Export Menu Dropdown State
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState(null);
+
+  // Auto-fit view on mount
   useEffect(() => {
     if (window.innerWidth < 768) {
       setZoomScale(0.55);
+    } else {
+      setZoomScale(0.85);
     }
   }, []);
 
-  // Pan Handlers (Mouse & Touch)
+  // Mouse Dragging (Panning)
   const handleMouseDown = (e) => {
-    if (
-      e.target.closest('.notion-node-card') ||
-      e.target.closest('.info-panel-drawer') ||
-      e.target.closest('.zoom-toolbar') ||
-      e.target.closest('.top-canvas-toolbar') ||
-      e.target.closest('.notion-header')
-    ) {
+    if (e.target.closest('.compact-tree-node') || e.target.closest('.info-panel-drawer') || e.target.closest('.zoom-toolbar') || e.target.closest('button')) {
       return;
     }
     setIsDragging(true);
-    setDragStart({ x: e.clientX - panPos.x, y: e.clientY - panPos.y });
+    setDragStart({
+      x: e.clientX - panPos.x,
+      y: e.clientY - panPos.y
+    });
   };
 
   const handleMouseMove = (e) => {
@@ -181,21 +151,15 @@ export function GraphCanvas() {
     setIsDragging(false);
   };
 
-  // Touch Panning for Mobile Phones
+  // Touch Support
   const handleTouchStart = (e) => {
-    if (
-      e.target.closest('.notion-node-card') ||
-      e.target.closest('.info-panel-drawer') ||
-      e.target.closest('.zoom-toolbar') ||
-      e.target.closest('.top-canvas-toolbar') ||
-      e.target.closest('.notion-header')
-    ) {
-      return;
-    }
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       setIsDragging(true);
-      setDragStart({ x: touch.clientX - panPos.x, y: touch.clientY - panPos.y });
+      setDragStart({
+        x: touch.clientX - panPos.x,
+        y: touch.clientY - panPos.y
+      });
     }
   };
 
@@ -231,6 +195,24 @@ export function GraphCanvas() {
     setZoomScale((prev) => Math.min(1.4, Math.max(0.25, Math.round((prev + delta) * 100) / 100)));
   };
 
+  // Export Graph Handler
+  const handleExport = async (format) => {
+    setExportingFormat(format);
+    setIsExportOpen(false);
+
+    if (format === 'json') {
+      downloadGraphAsJSON({ decision, nodes: displayNodes, sessionId });
+    } else {
+      await downloadGraphAsImage({
+        format,
+        elementId: 'graph-canvas-export-target',
+        filename: `ripple_decision_${sessionId || 'graph'}`
+      });
+    }
+
+    setExportingFormat(null);
+  };
+
   if (activeView === 'convergence_graph') {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -244,7 +226,7 @@ export function GraphCanvas() {
   const displayNodes = isAlternate ? alternateState.nodes : nodes;
   const activeTitle = isAlternate
     ? alternateState.alternateDecision?.title || alternateState.alternateDecision?.tagline || 'Alternate Path Analysis'
-    : decision || "A government should transition all public-sector vehicles to electric vehicles by 2032, while providing subsidies for charging infrastructure and workforce reskilling.";
+    : decision || "A government should transition all public-sector vehicles to electric vehicles by 2032.";
 
   const level1Nodes = displayNodes.filter(
     (n) => (n.graphLevel || n.level) === 1 || n.parentId === null
@@ -348,6 +330,7 @@ export function GraphCanvas() {
       >
         <div
           ref={canvasContainerRef}
+          id="graph-canvas-export-target"
           className={`graph-canvas-container ${isDragging ? 'is-dragging' : ''}`}
           style={{
             transform: `translate(${panPos.x}px, ${panPos.y}px) scale(${zoomScale})`,
@@ -358,25 +341,29 @@ export function GraphCanvas() {
             alignItems: 'center',
             width: 'max-content',
             minWidth: '100%',
-            padding: '40px 60px',
+            padding: '40px 60px 140px 60px',
             boxSizing: 'border-box'
           }}
         >
-          {/* --- 1. ROOT DECISION CARD --- */}
-          <div className="root-decision-node">
-            <div className="notion-label" style={{ marginBottom: '6px' }}>
-              ROOT DECISION OBJECTIVE
+          {/* ROOT DECISION NODE */}
+          <div className="compact-tree-node root-node-card" style={{ marginBottom: '0px', backgroundColor: '#FFFFFF', borderColor: '#2563EB' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '6px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="mono-label" style={{ color: '#2563EB', backgroundColor: '#EFF6FF', padding: '1px 6px', borderRadius: '4px', border: '1px solid #BFDBFE' }}>
+                  ROOT DECISION
+                </span>
+                <span className="domain-pill domain-pill-technology">Policy Target</span>
+              </div>
+              <span className="mono-label" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>ID: {sessionId || 'Root'}</span>
             </div>
-            <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 700, lineHeight: 1.45, margin: 0 }}>
+
+            <h3 style={{ fontSize: '14px', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.4 }}>
               {activeTitle}
             </h3>
           </div>
 
-          {/* Continuous Tree Branch Connector from ROOT directly to Level 1 nodes */}
-          <BranchConnector childCount={level1Nodes.length} isAnimating={false} />
-
-          {/* --- 2. LEVEL 1 BRANCHES ROW (Centered & Seamlessly Connected) --- */}
-          <div style={{ display: 'flex', justifyContent: 'center', width: '100%', minWidth: 'min-content', margin: '0 auto', position: 'relative' }}>
+          {/* LEVEL 1 -> LEVEL 4 CONSEQUENCE BRANCHES */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', position: 'relative' }}>
             {level1Nodes.map((l1Node, idx) => (
               <NodeBranch
                 key={l1Node.id || l1Node._id}
@@ -392,8 +379,8 @@ export function GraphCanvas() {
 
         </div>
 
-        {/* FLOATING INTERACTIVE CANVAS ZOOM TOOLBAR */}
-        <div className="zoom-toolbar">
+        {/* FLOATING INTERACTIVE CANVAS ZOOM & EXPORT TOOLBAR */}
+        <div className="zoom-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button className="zoom-btn" onClick={zoomOut} title="Zoom Out (-)">
             <ZoomOut size={14} />
           </button>
@@ -406,7 +393,7 @@ export function GraphCanvas() {
             <ZoomIn size={14} />
           </button>
 
-          <div style={{ width: '1px', height: '14px', backgroundColor: 'var(--border-diorama)', margin: '0 4px' }} />
+          <div style={{ width: '1px', height: '14px', backgroundColor: 'var(--border-diorama)', margin: '0 2px' }} />
 
           <button className="zoom-btn" onClick={fitView} title="Fit View">
             <Maximize2 size={13} />
@@ -417,6 +404,101 @@ export function GraphCanvas() {
             <RotateCcw size={13} />
             <span>Reset</span>
           </button>
+
+          <div style={{ width: '1px', height: '14px', backgroundColor: 'var(--border-diorama)', margin: '0 2px' }} />
+
+          {/* Export Graph Dropdown Trigger */}
+          <div style={{ position: 'relative' }}>
+            <button
+              className="zoom-btn"
+              onClick={() => setIsExportOpen(!isExportOpen)}
+              disabled={Boolean(exportingFormat)}
+              style={{
+                backgroundColor: '#2563EB',
+                color: '#FFFFFF',
+                borderColor: '#1D4ED8',
+                fontWeight: 700,
+                padding: '4px 10px'
+              }}
+              title="Download Graph Canvas as Image (PNG, JPEG, SVG) or JSON"
+            >
+              {exportingFormat ? (
+                <>
+                  <Loader2 size={13} className="spin" />
+                  <span>Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <Download size={13} />
+                  <span>Export Graph</span>
+                </>
+              )}
+            </button>
+
+            {/* Export Format Dropdown Menu */}
+            {isExportOpen && (
+              <div
+                className="no-export"
+                style={{
+                  position: 'absolute',
+                  bottom: '36px',
+                  right: 0,
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '10px',
+                  boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
+                  padding: '6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  minWidth: '170px',
+                  zIndex: 9999
+                }}
+              >
+                <div className="mono-label" style={{ fontSize: '9px', color: '#64748B', padding: '4px 8px', fontWeight: 800 }}>
+                  EXPORT GRAPH AS:
+                </div>
+
+                <button
+                  className="btn-notion"
+                  onClick={() => handleExport('png')}
+                  style={{ justifyContent: 'flex-start', padding: '6px 10px', fontSize: '12px', gap: '8px' }}
+                >
+                  <ImageIcon size={13} color="#2563EB" />
+                  <span>PNG Image (.png)</span>
+                </button>
+
+                <button
+                  className="btn-notion"
+                  onClick={() => handleExport('jpeg')}
+                  style={{ justifyContent: 'flex-start', padding: '6px 10px', fontSize: '12px', gap: '8px' }}
+                >
+                  <ImageIcon size={13} color="#059669" />
+                  <span>JPEG Image (.jpg)</span>
+                </button>
+
+                <button
+                  className="btn-notion"
+                  onClick={() => handleExport('svg')}
+                  style={{ justifyContent: 'flex-start', padding: '6px 10px', fontSize: '12px', gap: '8px' }}
+                >
+                  <FileCode size={13} color="#7C3AED" />
+                  <span>SVG Vector (.svg)</span>
+                </button>
+
+                <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '2px 0' }} />
+
+                <button
+                  className="btn-notion"
+                  onClick={() => handleExport('json')}
+                  style={{ justifyContent: 'flex-start', padding: '6px 10px', fontSize: '12px', gap: '8px' }}
+                >
+                  <Database size={13} color="#D97706" />
+                  <span>JSON Dataset (.json)</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Info Drawer */}

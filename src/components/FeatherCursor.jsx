@@ -88,7 +88,7 @@ export function FeatherCursor() {
 
   return (
     <>
-      {/* Floating Feather Quill Cursor */}
+      {/* Floating Feather Quill Cursor with z-index highest priority above modals */}
       <div
         ref={cursorRef}
         style={{
@@ -96,7 +96,7 @@ export function FeatherCursor() {
           top: 0,
           left: 0,
           pointerEvents: 'none',
-          zIndex: 9999,
+          zIndex: 9999999,
           transform: 'translate(-100px, -100px)',
           willChange: 'transform'
         }}
@@ -119,44 +119,50 @@ export function FeatherCursor() {
               strokeWidth="2.5"
               strokeLinecap="round"
             />
-            {/* Feather Vane Left */}
+            {/* Feather Vane (Left Side) */}
             <path
-              d="M16 48 C 10 38, 18 24, 38 14 C 44 11, 52 9, 54 10 C 52 16, 44 26, 32 36 Z"
-              fill="#5C4229"
-              stroke="#2C1D11"
-              strokeWidth="1.2"
+              d="M54 10 C 40 14, 28 26, 18 42 C 28 34, 42 24, 54 10 Z"
+              fill="#D4AF37"
               opacity="0.9"
             />
-            {/* Feather Vane Right */}
+            {/* Feather Vane (Right Side) */}
             <path
-              d="M18 50 C 24 48, 38 42, 46 28 C 48 24, 52 14, 54 10 C 48 18, 36 32, 24 44 Z"
-              fill="#8C6D4F"
-              stroke="#2C1D11"
-              strokeWidth="1"
+              d="M54 10 C 48 20, 36 34, 26 48 C 34 38, 46 24, 54 10 Z"
+              fill="#AA7C11"
               opacity="0.8"
             />
-            {/* Ink Tip */}
-            <circle cx="12" cy="52" r="2.5" fill="#1A0F08" />
+            {/* Fine Feather Barb Details */}
+            <path
+              d="M22 42 L26 36 M28 34 L33 28 M34 26 L40 18 M42 16 L48 10"
+              stroke="#F3E5AB"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            />
+            {/* Ink Nib Tip */}
+            <path
+              d="M12 52 L9 56 L15 53 Z"
+              fill="#1E1E1E"
+            />
           </svg>
         </div>
       </div>
 
-      {/* Trailing Sepia Ink Droplets */}
+      {/* Floating Ink Droplets */}
       {inkDrops.map((drop) => (
         <div
           key={drop.id}
           style={{
             position: 'fixed',
-            left: `${drop.x}px`,
-            top: `${drop.y}px`,
+            left: drop.x,
+            top: drop.y,
             width: `${drop.size}px`,
             height: `${drop.size}px`,
-            backgroundColor: '#2A180B',
             borderRadius: '50%',
+            backgroundColor: '#2C1D11',
             pointerEvents: 'none',
-            zIndex: 9998,
-            opacity: 0.6,
-            animation: 'inkDropFade 1s ease-out forwards'
+            zIndex: 9999998,
+            opacity: 0.5,
+            animation: 'inkFade 1s forwards ease-out'
           }}
         />
       ))}
